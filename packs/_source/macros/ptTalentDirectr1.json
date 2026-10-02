@@ -1,0 +1,14 @@
+{
+  "_id": "ptTalentDirectr1",
+  "_key": "!macros!ptTalentDirectr1",
+  "name": "Talent Director",
+  "type": "script",
+  "img": "icons/svg/mystery-man.svg",
+  "scope": "global",
+  "folder": "ptTalentMacFldr",
+  "command": "game.modules.get('pitax-talent')?.api?.openDirector();",
+  "ownership": {
+    "default": 0
+  },
+  "flags": {}
+}

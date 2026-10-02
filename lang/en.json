@@ -1,0 +1,46 @@
+{
+  "pitax-talent": {
+    "vote": "Vote X",
+    "noGM": "No GM is connected to count your X.",
+    "poster": "Pitax Has Got Talent",
+    "director": {
+      "title": "Talent Director",
+      "noStage": "View the Pitax Has Got Talent scene to direct the show.",
+      "seats": "Judges",
+      "empty": "— empty —",
+      "onStage": "On stage:",
+      "bringOn": "Bring On",
+      "clear": "Clear Stage",
+      "reset": "Reset X's",
+      "dossier": "Dossier",
+      "other": "Other"
+    },
+    "dossier": {
+      "title": "Contestant Dossier",
+      "empty": "Select a character in the Talent Director.",
+      "onStage": "On stage",
+      "preview": "Preview",
+      "bio": "Biography",
+      "case": "Council case",
+      "offers": "Offers",
+      "asks": "Asks",
+      "hides": "Hides",
+      "probes": "Probes",
+      "agenda": "Agenda",
+      "allies": "Allies",
+      "enemies": "Enemies",
+      "assets": "Assets",
+      "vulnerabilities": "Vulnerabilities",
+      "consequences": "Consequences",
+      "seated": "If seated",
+      "refused": "If refused",
+      "conflicts": "Conflicts"
+    },
+    "settings": {
+      "buzzer": {
+        "name": "Buzzer sound",
+        "hint": "Plays for everyone when a judge's X lights."
+      }
+    }
+  }
+}

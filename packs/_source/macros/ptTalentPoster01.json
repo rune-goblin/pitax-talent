@@ -1,0 +1,14 @@
+{
+  "_id": "ptTalentPoster01",
+  "_key": "!macros!ptTalentPoster01",
+  "name": "Show Talent Poster",
+  "type": "script",
+  "img": "modules/pitax-talent/assets/talent/poster.webp",
+  "scope": "global",
+  "folder": "ptTalentMacFldr",
+  "command": "game.modules.get('pitax-talent')?.api?.showPoster();",
+  "ownership": {
+    "default": 0
+  },
+  "flags": {}
+}

@@ -1,0 +1,58 @@
+{
+  "id": "pitax-talent",
+  "title": "Pitax Has Got Talent",
+  "description": "Pitax Has Got Talent: a GM-directed talent show stage where the judges' X's light up as players vote.",
+  "version": "0.1.0",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Mark Pearce"
+    }
+  ],
+  "esmodules": [
+    "dist/pitax-talent.js"
+  ],
+  "styles": [
+    "dist/pitax-talent.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "packs": [
+    {
+      "name": "pitax-talent",
+      "label": "Pitax Has Got Talent",
+      "path": "packs/pitax-talent",
+      "type": "Adventure",
+      "system": "pf2e",
+      "banner": "modules/pitax-talent/assets/talent/poster.webp",
+      "ownership": {
+        "PLAYER": "NONE",
+        "ASSISTANT": "OWNER"
+      }
+    }
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "pf2e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "8.0.0"
+        }
+      }
+    ]
+  },
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14"
+  },
+  "url": "https://github.com/rune-goblin/pitax-talent",
+  "manifest": "https://github.com/rune-goblin/pitax-talent/releases/latest/download/module.json",
+  "download": "https://github.com/rune-goblin/pitax-talent/releases/latest/download/pitax-talent.zip",
+  "socket": true
+}

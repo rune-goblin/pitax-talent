@@ -1,0 +1,122 @@
+{
+  "_id": "ptTalentStage001",
+  "_key": "!scenes!ptTalentStage001",
+  "name": "Pitax Has Got Talent",
+  "navigation": true,
+  "navName": "",
+  "folder": "ptTalentScnFldr",
+  "thumb": "modules/pitax-talent/assets/talent/stage-thumb.webp",
+  "width": 1544,
+  "height": 1019,
+  "padding": 0,
+  "shiftX": 0,
+  "shiftY": 0,
+  "initial": {
+    "x": null,
+    "y": null,
+    "scale": null
+  },
+  "background": {
+    "src": "modules/pitax-talent/assets/talent/pitax-stage-tall.webp",
+    "anchorX": 0,
+    "anchorY": 0,
+    "fit": "fill",
+    "scaleX": 1,
+    "scaleY": 1,
+    "tint": "#ffffff",
+    "alphaThreshold": 0
+  },
+  "backgroundColor": "#0b0612",
+  "levels": [
+    {
+      "_id": "defaultLevel0000",
+      "name": "Level",
+      "elevation": {
+        "bottom": 0,
+        "top": 20
+      },
+      "background": {
+        "color": "#0b0612",
+        "src": "modules/pitax-talent/assets/talent/pitax-stage-tall.webp",
+        "tint": "#ffffff",
+        "alphaThreshold": 0.75
+      },
+      "foreground": {
+        "src": null,
+        "tint": "#ffffff",
+        "alphaThreshold": 0.75
+      },
+      "fog": {
+        "src": null,
+        "tint": "#ffffff"
+      },
+      "textures": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "offsetX": 0,
+        "offsetY": 0,
+        "fit": "fill",
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0
+      },
+      "visibility": {
+        "levels": []
+      },
+      "sort": 0,
+      "flags": {},
+      "_key": "!scenes.levels!ptTalentStage001.defaultLevel0000"
+    }
+  ],
+  "initialLevel": "defaultLevel0000",
+  "grid": {
+    "type": 0,
+    "size": 100,
+    "style": "solidLines",
+    "thickness": 1,
+    "color": "#000000",
+    "alpha": 0,
+    "distance": 5,
+    "units": "ft"
+  },
+  "tokenVision": false,
+  "fog": {
+    "mode": 0,
+    "colors": {
+      "explored": null,
+      "unexplored": null
+    }
+  },
+  "environment": {
+    "darknessLevel": 0,
+    "darknessLock": true,
+    "globalLight": {
+      "enabled": true
+    }
+  },
+  "drawings": [],
+  "tokens": [],
+  "lights": [],
+  "notes": [],
+  "sounds": [],
+  "regions": [],
+  "tiles": [],
+  "walls": [],
+  "templates": [],
+  "playlist": null,
+  "playlistSound": null,
+  "journal": null,
+  "journalEntryPage": null,
+  "weather": "",
+  "ownership": {
+    "default": 0
+  },
+  "active": false,
+  "navOrder": 0,
+  "sort": 0,
+  "flags": {
+    "pitax-talent": {
+      "stage": true
+    }
+  }
+}
