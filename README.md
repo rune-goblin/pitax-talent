@@ -6,9 +6,9 @@ A Foundry VTT v14 module for the Pitax council arc of *Kingmaker*. The faction r
 
 1. Import the **Pitax Has Got Talent** Adventure. It adds the stage scene and two macros.
 2. View the stage scene. The **Talent Director** opens for the GM.
-3. Assign a player to each of the four judge seats.
-4. Pick a faction, select a character, and press **Bring On**. A double-click on a card does the same. The portrait walks forward from the central archway, and the GM-only **Contestant Dossier** opens beside the Director.
-5. Each seated player has an X button above the hotbar. Pressing it lights that judge's X on the stage for everyone and plays the buzzer. An X stays lit until the GM brings on the next contestant or presses **Reset X's**.
+3. Assign a player to each of the four judge seats under the X's. The chair button folds the seat pickers away.
+4. Open the **Cast** tab and click a character. The **Dossier** tab shows their notes and a **Bring On** button. The walking-figure button on a cast card brings that character on directly. The portrait walks forward from the central archway.
+5. Each seated player has an X button above the hotbar. Pressing it lights that judge's X on the stage for everyone and plays the buzzer. The GM lights any X by clicking it in the Director, and the undo arrow on a lit X takes it back. An X stays lit until the GM takes it back, brings on the next contestant or presses **Reset X's**.
 6. Four X's end the act: the stage dims and the contestant retreats into the archway.
 
 The **Show Talent Poster** macro opens the poster for everyone in Foundry's image window, which each viewer closes on their own.

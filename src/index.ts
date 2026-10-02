@@ -6,7 +6,6 @@ import { StageLayer } from './stage/StageLayer';
 import { isStage, refreshStore, registerSocket } from './sync';
 import { talent } from './talentStore.svelte';
 import { DirectorApp } from './ui/DirectorApp';
-import { DossierApp } from './ui/DossierApp';
 import { VoteButtonApp } from './ui/VoteButtonApp';
 
 const POSTER = `modules/${MODULE_ID}/assets/talent/poster.webp`;
@@ -19,7 +18,7 @@ function showPoster(): void {
   popout.shareImage();
 }
 
-const api = { openDirector: DirectorApp.open, openDossier: DossierApp.open, showPoster };
+const api = { openDirector: DirectorApp.open, showPoster };
 
 Hooks.once('init', () => {
   game.settings.register(MODULE_ID, BUZZER_SETTING, {

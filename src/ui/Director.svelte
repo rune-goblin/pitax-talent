@@ -1,39 +1,38 @@
 <script lang="ts">
-  import { X_OFF, X_ON } from '../constants';
   import { t } from '../i18n';
-  import { contestant, rosterGroups, thumbPath } from '../roster';
-  import { assignSeat, bringOn, clearStage, resetVotes } from '../state';
+  import { rosterGroups } from '../roster';
+  import { bringOn } from '../state';
   import { mutate } from '../sync';
   import { talent } from '../talentStore.svelte';
-  import { DossierApp } from './DossierApp';
+  import Cast from './Cast.svelte';
+  import Dossier from './Dossier.svelte';
+  import ShowStrip from './ShowStrip.svelte';
+
+  type Tab = 'dossier' | 'cast';
 
   const groups = rosterGroups(t('director.other'));
-  const players = game.users.filter((u) => !u.isGM).map((u) => ({ id: u.id, name: u.name }));
+  const castSize = groups.reduce((n, g) => n + g.members.length, 0);
 
-  let groupId = $state(groups[0].id);
-  let selectedId = $state<string | null>(null);
+  let tab = $state<Tab>(talent.state.contestantId ? 'dossier' : 'cast');
+  let previewId = $state<string | null>(null);
 
-  const group = $derived(groups.find((g) => g.id === groupId) ?? groups[0]);
-  const onStage = $derived(contestant(talent.state.contestantId));
+  const stagedId = $derived(talent.state.contestantId);
+  const shownId = $derived(previewId ?? stagedId);
 
-  const update = (fn: Parameters<typeof mutate>[1]) => talent.sceneId && mutate(talent.sceneId, fn);
-
-  function select(id: string) {
-    selectedId = id;
-    talent.dossierId = id;
+  function preview(id: string) {
+    previewId = id === stagedId ? null : id;
+    tab = 'dossier';
   }
 
-  function stage() {
-    if (!selectedId) return;
-    const id = selectedId;
-    talent.dossierId = null;
-    update((s) => bringOn(s, id));
-    DossierApp.open();
+  function showStaged() {
+    previewId = null;
+    tab = 'dossier';
   }
 
-  function seat(index: number, event: Event) {
-    const userId = (event.currentTarget as HTMLSelectElement).value || null;
-    update((s) => assignSeat(s, index, userId));
+  function stage(id: string) {
+    if (!talent.sceneId) return;
+    showStaged();
+    void mutate(talent.sceneId, (s) => bringOn(s, id));
   }
 </script>
 
@@ -41,198 +40,95 @@
   {#if !talent.sceneId}
     <p class="notice">{t('director.noStage')}</p>
   {:else}
-    <section class="seats">
-      <h3>{t('director.seats')}</h3>
-      <div class="seat-row">
-        {#each talent.state.seats as userId, i (i)}
-          <label class="seat">
-            <img src={talent.state.votes[i] ? X_ON : X_OFF} alt="" />
-            <select value={userId ?? ''} onchange={(e) => seat(i, e)}>
-              <option value="">{t('director.empty')}</option>
-              {#each players as p (p.id)}
-                <option value={p.id}>{p.name}</option>
-              {/each}
-            </select>
-          </label>
-        {/each}
-      </div>
-    </section>
+    <ShowStrip onshow={showStaged} />
 
-    <section class="now">
-      <span>{t('director.onStage')}</span>
-      <strong>{onStage?.name ?? '—'}</strong>
-      <div class="actions">
-        <button type="button" disabled={!selectedId} onclick={stage}>
-          <i class="fa-solid fa-person-walking"></i>
-          {t('director.bringOn')}
-        </button>
-        <button type="button" disabled={!onStage} onclick={() => update(clearStage)}>
-          <i class="fa-solid fa-door-closed"></i>
-          {t('director.clear')}
-        </button>
-        <button type="button" onclick={() => update(resetVotes)}>
-          <i class="fa-solid fa-rotate-left"></i>
-          {t('director.reset')}
-        </button>
-        <button type="button" onclick={() => DossierApp.open()}>
-          <i class="fa-solid fa-scroll"></i>
-          {t('director.dossier')}
-        </button>
-      </div>
-    </section>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" class="tab" class:current={tab === 'dossier'} aria-selected={tab === 'dossier'} onclick={() => (tab = 'dossier')}>
+        {t('director.tabs.dossier')}
+      </button>
+      <button type="button" role="tab" class="tab" class:current={tab === 'cast'} aria-selected={tab === 'cast'} onclick={() => (tab = 'cast')}>
+        {t('director.tabs.cast')}
+        <small>{castSize}</small>
+      </button>
+    </div>
 
-    <nav class="factions">
-      {#each groups as g (g.id)}
-        <button type="button" class:active={g.id === groupId} onclick={() => (groupId = g.id)}>{g.name}</button>
-      {/each}
-    </nav>
-
-    <ul class="roster">
-      {#each group.members as npc (npc.id)}
-        <li>
-          <button
-            type="button"
-            class="card"
-            class:selected={npc.id === selectedId}
-            class:staged={npc.id === talent.state.contestantId}
-            onclick={() => select(npc.id)}
-            ondblclick={stage}
-          >
-            <img src={thumbPath(npc)} alt="" loading="lazy" />
-            <span class="name">{npc.name}</span>
-            <span class="role">{npc.role}</span>
-            {#if npc.fate}<span class="fate">{npc.fate}</span>{/if}
-          </button>
-        </li>
-      {/each}
-    </ul>
+    <div class="panel" role="tabpanel" hidden={tab !== 'dossier'}>
+      <Dossier id={shownId} {stagedId} onstage={stage} onbrowse={() => (tab = 'cast')} />
+    </div>
+    <div class="panel" role="tabpanel" hidden={tab !== 'cast'}>
+      <Cast {groups} {stagedId} {shownId} onpreview={preview} onstage={stage} />
+    </div>
   {/if}
 </div>
 
 <style>
   .director {
     display: flex;
+    flex: 1;
     flex-direction: column;
-    gap: 0.75rem;
-    height: 100%;
+    min-height: 0;
+    background: radial-gradient(120% 60% at 50% 0%, rgb(84 16 31 / 0.25), transparent 70%), var(--pt-ink);
   }
 
   .notice {
+    margin: 0;
+    padding: 1.25rem;
+    color: var(--pt-muted);
     font-style: italic;
   }
 
-  h3 {
-    margin: 0 0 0.25rem;
-    border: none;
-  }
-
-  .seat-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.5rem;
-  }
-
-  .seat {
+  .tabs {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
+    flex: none;
+    gap: 4px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--pt-ink-line);
+    background: var(--pt-ink-raised);
   }
 
-  .seat img {
-    width: 40px;
-    height: 40px;
-    border: none;
-  }
-
-  .now {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .now strong {
-    flex: 1;
-    font-size: 1.1em;
-  }
-
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    width: 100%;
-  }
-
-  .actions button {
-    flex: 1;
-    white-space: nowrap;
-  }
-
-  .factions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
-  .factions button {
-    flex: 0 0 auto;
+  .tab {
+    flex: none;
+    gap: 8px;
     width: auto;
-    padding: 0 0.6rem;
-  }
-
-  .factions button.active {
-    background: var(--color-warm-2, #6b21a8);
-    color: white;
-  }
-
-  .roster {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 0.5rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    overflow-y: auto;
-  }
-
-  .card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.2rem;
-    width: 100%;
-    height: 100%;
-    padding: 0.4rem;
-    line-height: 1.2;
-    text-align: center;
-  }
-
-  .card img {
-    height: 140px;
+    height: 40px;
+    margin-bottom: -1px;
+    padding: 4px 14px 0;
     border: none;
-    object-fit: contain;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: var(--pt-muted);
+    font-family: var(--pt-display);
+    font-size: 21px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 150ms ease, border-color 150ms ease;
   }
 
-  .card.selected {
-    outline: 2px solid gold;
+  .tab:hover {
+    color: var(--pt-paper);
   }
 
-  .card.staged {
-    box-shadow: 0 0 10px rgb(255 200 60 / 0.8);
+  .tab.current {
+    border-bottom-color: var(--pt-gilt);
+    color: var(--pt-gilt);
   }
 
-  .name {
-    font-weight: bold;
+  .tab small {
+    padding: 1px 6px;
+    border: 1px solid currentcolor;
+    border-radius: 9px;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    letter-spacing: 0;
+    opacity: 0.7;
   }
 
-  .role,
-  .fate {
-    font-size: 0.8em;
-    opacity: 0.8;
-  }
-
-  .fate {
-    color: #c33;
+  .panel:not([hidden]) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
   }
 </style>

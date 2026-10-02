@@ -39,14 +39,21 @@ test.describe('Talent stage', () => {
     );
   });
 
-  test('a seated player X lights for everyone and the dossier stays GM-only', async ({ gmPage, browser }) => {
+  test('a seated player X lights for everyone and the director stays GM-only', async ({ gmPage, browser }) => {
     const director = gmPage.locator(`#${MODULE_ID}-director`);
     await expect(director).toBeVisible();
 
     await director.locator('.seat select').first().selectOption(playerId);
-    await director.getByRole('button', { name: 'Jhofre Vascari' }).click();
-    await director.getByRole('button', { name: 'Bring On' }).click();
-    await expect(gmPage.locator(`#${MODULE_ID}-dossier`)).toContainText('Head of the Vascari house');
+    await director.getByRole('button', { name: 'Assign judges' }).click();
+    await expect(director.locator('.seat select')).toHaveCount(0);
+    await expect(director.locator('.judge').first()).toHaveText('__e2e_judge');
+    await director.getByRole('tab', { name: 'Cast' }).click();
+    await test.info().attach('director-cast', { body: await director.screenshot(), contentType: 'image/png' });
+    await director.locator('.cast').getByRole('button', { name: /^Jhofre Vascari/ }).click();
+    const dossier = director.locator('.dossier');
+    await expect(dossier).toContainText('Head of the Vascari house');
+    await dossier.getByRole('button', { name: 'Bring On' }).click();
+    await expect(dossier.locator('.status')).toHaveText('On stage');
 
     playerPage = await (await browser.newContext()).newPage();
     await joinAs(playerPage, playerId);
@@ -72,12 +79,23 @@ test.describe('Talent stage', () => {
     for (const page of [gmPage, playerPage]) await expect.poll(() => buzzes(page)).toEqual([BUZZER]);
     expect(await gmPage.evaluate(async (src) => (await fetch(src)).ok, BUZZER)).toBe(true);
 
-    await expect(playerPage.locator(`#${MODULE_ID}-dossier`)).toHaveCount(0);
     await expect(playerPage.locator(`#${MODULE_ID}-director`)).toHaveCount(0);
+    await test.info().attach('director-dossier', { body: await director.screenshot(), contentType: 'image/png' });
 
-    await director.getByRole('button', { name: 'Bring On' }).click();
+    await director.getByRole('button', { name: /^Take back/ }).click();
     await expect.poll(votes).toEqual([false, false, false, false]);
     await expect(button).toBeEnabled();
+
+    await director.locator('.seat .light').nth(1).click();
+    await expect.poll(votes).toEqual([false, true, false, false]);
+    await director.getByRole('button', { name: "Reset X's" }).click();
+    await expect.poll(votes).toEqual([false, false, false, false]);
+
+    const scrolled = await dossier.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+      return el.scrollTop;
+    });
+    expect(scrolled).toBeGreaterThan(0);
 
     await closeWindows(gmPage);
     await gmPage.waitForTimeout(3500);

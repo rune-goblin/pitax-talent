@@ -36,6 +36,11 @@ export function castVote(state: TalentState, seat: number): TalentState {
   return { ...state, votes: state.votes.map((on, i) => on || i === seat) };
 }
 
+export function retractVote(state: TalentState, seat: number): TalentState {
+  if (state.votes[seat] !== true) return state;
+  return { ...state, votes: state.votes.map((on, i) => on && i !== seat) };
+}
+
 export function bringOn(state: TalentState, contestantId: string): TalentState {
   return { ...state, contestantId, votes: emptyState().votes, entrance: state.entrance + 1 };
 }

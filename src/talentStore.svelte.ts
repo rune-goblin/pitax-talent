@@ -4,6 +4,4 @@ import { emptyState, type TalentState } from './state';
 export const talent = $state({
   sceneId: null as string | null,
   state: emptyState() as TalentState,
-  /** GM-local: the character the Dossier shows; falls back to whoever is on stage. */
-  dossierId: null as string | null,
 });

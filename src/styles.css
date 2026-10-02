@@ -1,3 +1,33 @@
-.pitax-talent {
-  --pitax-talent-accent: #6b21a8;
+.pitax-talent-director {
+  --pt-ink: #120916;
+  --pt-ink-raised: #1d0f24;
+  --pt-ink-line: rgb(220 180 99 / 0.22);
+  --pt-velvet: #54101f;
+  --pt-velvet-deep: #2c0914;
+  --pt-ruby: #e2263f;
+  --pt-ruby-soft: #ff8090;
+  --pt-gilt: #dcb463;
+  --pt-gilt-dim: #8f7238;
+  --pt-paper: #efe3cc;
+  --pt-muted: #b3a28a;
+  --pt-display: 'Modesto Condensed', 'Palatino Linotype', serif;
+  --pt-serif: 'Amiri', 'Palatino Linotype', serif;
+}
+
+.pitax-talent-director .window-content {
+  padding: 0;
+  background: var(--pt-ink);
+  color: var(--pt-paper);
+}
+
+/* Foundry's window content hides overflow, so the panels inside need a bounded height to scroll. */
+.pitax-talent-director .pitax-talent-root {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pitax-talent-director button:focus:not(:focus-visible) {
+  outline: none;
 }

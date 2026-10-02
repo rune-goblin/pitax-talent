@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allVotesIn, assignSeat, bringOn, castVote, clearStage, emptyState, newVotes, normalize, seatOf } from './state';
+import { allVotesIn, assignSeat, bringOn, castVote, clearStage, emptyState, newVotes, normalize, retractVote, seatOf } from './state';
 
 const onStage = () => bringOn(emptyState(), 'jhofre');
 
@@ -21,6 +21,18 @@ describe('castVote', () => {
   it('ignores seats outside the row', () => {
     const state = onStage();
     expect(castVote(state, 7)).toBe(state);
+  });
+});
+
+describe('retractVote', () => {
+  it('clears one X and leaves the others lit', () => {
+    const voted = castVote(castVote(onStage(), 0), 2);
+    expect(retractVote(voted, 2).votes).toEqual([true, false, false, false]);
+  });
+
+  it('ignores a seat whose X is dark', () => {
+    const state = onStage();
+    expect(retractVote(state, 1)).toBe(state);
   });
 });
 

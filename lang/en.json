@@ -6,20 +6,35 @@
     "director": {
       "title": "Talent Director",
       "noStage": "View the Pitax Has Got Talent scene to direct the show.",
-      "seats": "Judges",
+      "tabs": {
+        "dossier": "Dossier",
+        "cast": "Cast"
+      },
+      "seats": "Assign judges",
+      "judge": "Judge {n}",
       "empty": "— empty —",
-      "onStage": "On stage:",
+      "onStage": "On stage",
+      "out": "Buzzed off",
+      "stageEmpty": "The stage is empty",
+      "showDossier": "Show {name}'s dossier",
+      "light": "Light {judge}'s X",
+      "undo": "Take back {judge}'s X",
       "bringOn": "Bring On",
+      "bringOnNamed": "Bring on {name}",
       "clear": "Clear Stage",
       "reset": "Reset X's",
-      "dossier": "Dossier",
+      "group": {
+        "council": "Council",
+        "court": "Irovetti's court",
+        "city": "City"
+      },
       "other": "Other"
     },
     "dossier": {
-      "title": "Contestant Dossier",
-      "empty": "Select a character in the Talent Director.",
+      "empty": "Pick a character from the cast.",
       "onStage": "On stage",
       "preview": "Preview",
+      "faction": "Faction",
       "bio": "Biography",
       "case": "Council case",
       "offers": "Offers",
