@@ -10,4 +10,5 @@ export const BUZZER_SETTING = 'buzzer';
 export const ASSETS = `modules/${MODULE_ID}/assets`;
 export const X_OFF = `${ASSETS}/talent/x-off.webp`;
 export const X_ON = `${ASSETS}/talent/x-on.webp`;
+export const X_ON_GLOW = `${ASSETS}/talent/x-on-glow.webp`;
 export const DEFAULT_BUZZER = `${ASSETS}/audio/buzzer.ogg`;

@@ -1,4 +1,4 @@
-import { BUZZER_SETTING, MODULE_ID, X_OFF, X_ON } from '../constants';
+import { BUZZER_SETTING, MODULE_ID, X_OFF, X_ON, X_ON_GLOW } from '../constants';
 import { contestant, portraitPath } from '../roster';
 import { allVotesIn, newVotes, SEAT_COUNT, type TalentState } from '../state';
 import { LAYOUT, STAGE, walkPose, xCenters } from './pose';
@@ -10,12 +10,14 @@ const ENTRANCE_MS = 2600;
 const EXIT_MS = 1400;
 const ELIMINATED_MS = 2200;
 const POP_MS = 380;
+const GLOW_MS = 900;
 const DIM = 0.55;
 const REFLECTION = 0.18;
 
 interface XMark {
   root: PIXI.Container;
-  on: PIXI.Sprite;
+  lit: PIXI.Container;
+  glow: PIXI.Sprite;
 }
 
 /**
@@ -81,20 +83,25 @@ export class StageLayer {
     const buzzer = buzzerSrc();
     if (buzzer) void foundry.audio.AudioHelper.preloadSound(buzzer).catch(() => {});
 
-    const [off, on] = await Promise.all([loadTexture(X_OFF), loadTexture(X_ON)]);
+    const [off, on, glow] = await Promise.all([loadTexture(X_OFF), loadTexture(X_ON), loadTexture(X_ON_GLOW)]);
     const size = LAYOUT.xRow.size * this.#k;
     this.#marks = xCenters(SEAT_COUNT).map((cx) => {
       const root = new PIXI.Container();
       root.position.set(this.#x(cx), this.#y(LAYOUT.xRow.y));
       const offSprite = new PIXI.Sprite(off as PIXI.Texture);
       const onSprite = new PIXI.Sprite(on as PIXI.Texture);
-      for (const s of [offSprite, onSprite]) {
+      const glowSprite = new PIXI.Sprite(glow as PIXI.Texture);
+      for (const s of [offSprite, onSprite, glowSprite]) {
         s.anchor.set(0.5);
         s.width = s.height = size;
       }
-      onSprite.alpha = 0;
-      root.addChild(offSprite, onSprite);
-      return { root, on: onSprite };
+      glowSprite.alpha = 0;
+      // Clearing a vote mid-pop hides the fading glow along with the X.
+      const lit = new PIXI.Container();
+      lit.alpha = 0;
+      lit.addChild(onSprite, glowSprite);
+      root.addChild(offSprite, lit);
+      return { root, lit, glow: glowSprite };
     });
 
     this.#root.addChild(this.#dim, this.#figure, ...this.#marks.map((m) => m.root));
@@ -106,13 +113,13 @@ export class StageLayer {
     const out = allVotesIn(state);
     this.#pose(state.contestantId && !out ? 1 : 0);
     this.#dim.alpha = out ? DIM : 0;
-    state.votes.forEach((on, i) => (this.#marks[i].on.alpha = on ? 1 : 0));
+    state.votes.forEach((on, i) => (this.#marks[i].lit.alpha = on ? 1 : 0));
   }
 
   async #transition(before: TalentState, after: TalentState): Promise<void> {
     for (const seat of newVotes(before, after)) this.#pop(seat);
     after.votes.forEach((on, i) => {
-      if (!on) this.#marks[i].on.alpha = 0;
+      if (!on) this.#marks[i].lit.alpha = 0;
     });
 
     const arrived = after.contestantId && after.entrance !== before.entrance;
@@ -186,7 +193,8 @@ export class StageLayer {
 
   #pop(seat: number): void {
     const mark = this.#marks[seat];
-    mark.on.alpha = 1;
+    mark.lit.alpha = 1;
+    mark.glow.alpha = 1;
     mark.root.scale.set(1.7);
     void CanvasAnimation.animate(
       [
@@ -195,6 +203,10 @@ export class StageLayer {
       ],
       { name: this.#animName(`pop${seat}`), duration: POP_MS, easing: 'easeOutCircle' },
     );
+    void CanvasAnimation.animate([{ parent: mark.glow, attribute: 'alpha', to: 0 }], {
+      name: this.#animName(`glow${seat}`),
+      duration: GLOW_MS,
+    });
     playBuzzer();
   }
 
