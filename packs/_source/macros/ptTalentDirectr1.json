@@ -3,7 +3,7 @@
   "_key": "!macros!ptTalentDirectr1",
   "name": "Talent Director",
   "type": "script",
-  "img": "icons/svg/mystery-man.svg",
+  "img": "icons/tools/instruments/megaphone.webp",
   "scope": "global",
   "folder": "ptTalentMacFldr0",
   "command": "game.modules.get('pitax-talent')?.api?.openDirector();",

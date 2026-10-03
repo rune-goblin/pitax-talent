@@ -1,7 +1,7 @@
 <script lang="ts">
   import { CHECK, X_OFF, X_ON } from '../constants';
   import { t, tf } from '../i18n';
-  import { contestant, REGENT_ID, thumbPath } from '../roster';
+  import { contestant, outcome, REGENT_ID, thumbPath } from '../roster';
   import { assignSeat, awaitingRegent, castVote, clearStage, resetVotes, retractVote, spotlight, verdict, type TalentState } from '../state';
   import { mutate } from '../sync';
   import { talent } from '../talentStore.svelte';
@@ -18,7 +18,7 @@
   const out = $derived(decided === 'rejected');
   const eyebrow = $derived(
     decided
-      ? t(`director.${decided}`)
+      ? t(`director.${outcome(decided, talent.state.contestantIds)}`)
       : awaitingRegent(talent.state)
         ? tf('regent.decides', { name: contestant(REGENT_ID)?.name ?? REGENT_ID })
         : t('director.onStage'),

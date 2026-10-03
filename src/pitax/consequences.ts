@@ -80,6 +80,26 @@ export const consequences: Record<string, Consequences> = {
       'Annamede Belavarah: she knows what Eliste did for Irovetti, and Eliste wants her silenced.',
     ],
   },
+  temur: {
+    motive: 'A Warden out of uniform is a man the city can hang. He needs the council to keep his men armed, paid and pardoned.',
+    seated: [
+      'Wardens patrol every district within the week, and crime falls wherever they walk.',
+      'The stocks and the yardarm in the Common Square fill again, and the city whispers that Irovetti’s law has returned.',
+      'Ingras Quill reads her journal of Warden faces aloud in the Common Square, and her son’s killers stand among the council’s new enforcers.',
+      'Valerie praises the quiet streets, and Drey Yarness asks in session whether she has forgotten the Black Cells.',
+    ],
+    refused: [
+      'He marches his unit out of the Iron Fox Armory at dawn and takes its stores with him.',
+      'The Wardens turn bandit on the roads around Pitax and tax every caravan for “protection,” and the Darkwind and Sarain wagons stop running.',
+      'He gathers Avinash Jurrg’s unpaid mercenaries under his banner, and the countryside has an army again; advance Temur’s clock by 1.',
+      'The streets stay unguarded, and crime keeps spiking until the council raises a guard of its own.',
+    ],
+    conflicts: [
+      'Gasperre Liacenza: both claim the Iron Fox Armory. Seat both, and the council must evict one of them.',
+      'Ingras Quill: she wants his men hanged, and her journal names them.',
+      'Asmeranda Ilata: her testimony about the Black Cells condemns the men he commands.',
+    ],
+  },
   jhofre: {
     motive: 'He plans to squeeze rival shippers once he holds the river, and he wants Joravin Pyathe gone so the Vascaris set the tariffs as well as the schedule.',
     seated: [

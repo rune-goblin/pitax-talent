@@ -16,11 +16,12 @@
     clocks: Record<string, Clock>;
     onshow: (id: string) => void;
     onstage: (ids: string[]) => void;
+    ondismiss: (ids: string[]) => void;
     onbrowse: () => void;
     onclock: (id: string, clock: Clock) => void;
   }
 
-  let { subject, stagedIds, clocks, onshow, onstage, onbrowse, onclock }: Props = $props();
+  let { subject, stagedIds, clocks, onshow, onstage, ondismiss, onbrowse, onclock }: Props = $props();
 
   const clockOf = (d: Dossier): Clock | undefined =>
     clocks[d.npc.id] ?? (d.agenda?.clock ? { size: d.agenda.clock, progress: d.agenda.progress ?? 0 } : undefined);
@@ -122,13 +123,19 @@
             <i class="fa-solid fa-person-walking"></i>
             {t('director.bringOn')}
           </button>
-        {:else if others.length}
-          <span class="others">
-            {t('dossier.alsoOnStage')}
-            {#each others as npc (npc.id)}
-              <button type="button" class="chip" onclick={() => onshow(npc.id)}>{npc.name}</button>
-            {/each}
-          </span>
+        {:else}
+          <button type="button" class="action" onclick={() => ondismiss(slateIds)}>
+            <i class="fa-solid fa-door-open"></i>
+            {t('director.dismiss')}
+          </button>
+          {#if others.length}
+            <span class="others">
+              {t('dossier.alsoOnStage')}
+              {#each others as npc (npc.id)}
+                <button type="button" class="chip" onclick={() => onshow(npc.id)}>{npc.name}</button>
+              {/each}
+            </span>
+          {/if}
         {/if}
       </div>
     </header>

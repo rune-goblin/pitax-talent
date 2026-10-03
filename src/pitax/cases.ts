@@ -35,6 +35,13 @@ export const cases: Record<string, CouncilCase> = {
     hides: ['Her scheming put Irovetti on the throne', 'Palace papers name her as his ally', 'She holds blackmail on the other applicants'],
     probes: ['Society DC 37 in the palace records: letters between Eliste and Irovetti', 'Perception DC 37: she lies about when she first met Irovetti', 'Intimidation DC 35: she offers blackmail on a rival to save herself'],
   },
+  temur: {
+    pitch: '“Since the king fell, your merchants hire knives to guard their doors and the Dealers sell in daylight. My Wardens kept these streets quiet under the old king. Give them back the law, and Pitax will sleep through the night by midwinter.”',
+    offers: ['One unit of Wardens, garrisoned in Pitax under the council’s banner', 'Patrols on every street within the week, and an end to the crime wave', 'Steel behind Joravin Pyathe’s tariffs and the council’s rulings', 'Patrol records that name every informer, fence and smuggler in the city'],
+    asks: ['A council seat and command of the city’s law', 'Amnesty for every Warden for acts done under Irovetti', 'The Iron Fox Armory as the Wardens’ barracks, whatever the Liacenza deed says', 'Wages for his men from the treasury'],
+    hides: ['He signed the arrest warrants that filled the Black Cells', 'He buried the report on the killing of Ingras Quill’s son and kept the patrol in service', 'His men answer to him alone and will follow him out of the city if he goes'],
+    probes: ['Society DC 35 in the palace archives: his signature on the Black Cells warrants', 'Ask Asmeranda Ilata: she knows his face from the Black Cells', 'Diplomacy DC 37 with his sergeant: the unit marches out with him if the council refuses'],
+  },
   jhofre: {
     pitch: '“I have spent my life on the Sellen, far from Pitax’s feuds. Give me the river, and I will keep the city fed and paid.”',
     offers: ['Control of river trade and dock scheduling', 'Contacts along the Sellen River', 'Early and open support for Valerie'],

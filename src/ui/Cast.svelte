@@ -16,14 +16,24 @@
     shownId: string | null;
     onpreview: (id: string) => void;
     onstage: (ids: string[]) => void;
+    onjoin: (id: string) => void;
   }
 
-  let { members, stagedIds, shownId, onpreview, onstage }: Props = $props();
+  let { members, stagedIds, shownId, onpreview, onstage, onjoin }: Props = $props();
 </script>
 
 <ul class="cast">
   {#each members as { npc, troupe } (npc.id)}
-    <CastCard {npc} {troupe} staged={stagedIds.includes(npc.id)} shown={npc.id === shownId} {onpreview} onstage={(id) => onstage([id])} />
+    <CastCard
+      {npc}
+      {troupe}
+      staged={stagedIds.includes(npc.id)}
+      joinable={stagedIds.length > 0 && !stagedIds.includes(npc.id)}
+      shown={npc.id === shownId}
+      {onpreview}
+      onstage={(id) => onstage([id])}
+      {onjoin}
+    />
   {/each}
 </ul>
 

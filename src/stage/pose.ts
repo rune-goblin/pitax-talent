@@ -9,9 +9,7 @@ export const LAYOUT = {
   /** Each contestant's name sits just below their feet, sized for the front of the stage. */
   figureName: { below: 28, size: 72 },
   /** Valerie's token fills the archway while she breaks a tie; her vote badges its lower right. */
-  regent: { y: 1330, size: 440, captionY: 1590, markSize: 170 },
-  /** The verdict hangs over the floor's emblem, wrapped to the width of the stage disc. */
-  verdict: { y: 2150, size: 120, width: 2000 },
+  regent: { y: 1330, size: 440, markSize: 170 },
 } as const;
 
 export interface Pose {
@@ -56,6 +54,8 @@ export const xCenters = (count: number): number[] =>
 
 const SPREAD = 0.6;
 
-/** Horizontal offsets from centre stage for a slate of `count` figures, spaced by their height so they close up at the back. */
-export const figureOffsets = (count: number, height: number): number[] =>
-  Array.from({ length: count }, (_, i) => (i - (count - 1) / 2) * height * SPREAD);
+/** Each figure's place in a slate of `count`, in spacing units from centre stage; sliding between two counts tweens these. */
+export const slots = (count: number): number[] => Array.from({ length: count }, (_, i) => i - (count - 1) / 2);
+
+/** A slot's distance from centre stage for a figure of `height`, so the slate closes up at the back. */
+export const slotOffset = (slot: number, height: number): number => slot * height * SPREAD;

@@ -15,7 +15,7 @@ export const problems: Problem[] = [
     id: 'guard',
     title: 'No city guard',
     summary:
-      'The Pitax Wardens have largely disbanded, and nothing has replaced them. With no one patrolling the streets, crime is spiking across the city, and Joravin Pyathe has no one to enforce tariffs on the docks.',
+      'The Pitax Wardens have largely disbanded. Temur Ganbold keeps one loyal unit behind the Iron Fox Armory’s gates, and no one else patrols the streets. Crime is spiking across the city, and Joravin Pyathe has no one to enforce tariffs on the docks.',
   },
   {
     id: 'treasury',

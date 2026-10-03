@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '../i18n';
   import { actKey, factionOnStage, rosterGroups } from '../roster';
-  import { bringOn, clearResults, setClock, type Clock } from '../state';
+  import { bringOn, clearResults, dismiss, join, setClock, type Clock } from '../state';
   import { mutate } from '../sync';
   import { talent } from '../talentStore.svelte';
   import Cast, { type CastMember } from './Cast.svelte';
@@ -57,6 +57,14 @@
     void mutate(talent.sceneId, (s) => bringOn(s, ids, actKey(ids)));
   }
 
+  function comeOn(id: string) {
+    if (talent.sceneId) void mutate(talent.sceneId, (s) => join(s, id, actKey));
+  }
+
+  function leave(ids: string[]) {
+    if (talent.sceneId) void mutate(talent.sceneId, (s) => dismiss(s, ids, actKey));
+  }
+
   function tick(id: string, clock: Clock) {
     if (talent.sceneId) void mutate(talent.sceneId, (s) => setClock(s, id, clock));
   }
@@ -92,6 +100,7 @@
         clocks={talent.state.clocks}
         onshow={(id) => show({ kind: 'npc', id })}
         onstage={stage}
+        ondismiss={leave}
         onbrowse={() => (tab = 'council')}
         onclock={tick}
       />
@@ -107,7 +116,7 @@
       />
     </div>
     <div class="panel" role="tabpanel" data-tab="cast" hidden={tab !== 'cast'}>
-      <Cast members={cast} {stagedIds} {shownId} onpreview={(id) => show({ kind: 'npc', id })} onstage={stage} />
+      <Cast members={cast} {stagedIds} {shownId} onpreview={(id) => show({ kind: 'npc', id })} onstage={stage} onjoin={comeOn} />
     </div>
     <div class="panel" role="tabpanel" data-tab="problems" hidden={tab !== 'problems'}>
       <Problems />

@@ -7,12 +7,15 @@
     npc: Npc;
     troupe?: string;
     staged: boolean;
+    /** Someone else holds the stage, so this one can come on beside them. */
+    joinable: boolean;
     shown: boolean;
     onpreview: (id: string) => void;
     onstage: (id: string) => void;
+    onjoin: (id: string) => void;
   }
 
-  let { npc, troupe, staged, shown, onpreview, onstage }: Props = $props();
+  let { npc, troupe, staged, joinable, shown, onpreview, onstage, onjoin }: Props = $props();
 </script>
 
 <li class="card" class:staged class:shown>
@@ -33,15 +36,28 @@
       <span class="role">{npc.role}</span>
     </span>
   </button>
-  <button
-    type="button"
-    class="send"
-    aria-label={tf('director.bringOnNamed', { name: npc.name })}
-    data-tooltip={tf('director.bringOnNamed', { name: npc.name })}
-    onclick={() => onstage(npc.id)}
-  >
-    <i class="fa-solid fa-person-walking"></i>
-  </button>
+  <span class="moves">
+    <button
+      type="button"
+      class="send"
+      aria-label={tf('director.bringOnNamed', { name: npc.name })}
+      data-tooltip={tf('director.bringOnNamed', { name: npc.name })}
+      onclick={() => onstage(npc.id)}
+    >
+      <i class="fa-solid fa-person-walking"></i>
+    </button>
+    {#if joinable}
+      <button
+        type="button"
+        class="send"
+        aria-label={tf('director.comeOnNamed', { name: npc.name })}
+        data-tooltip={tf('director.comeOnNamed', { name: npc.name })}
+        onclick={() => onjoin(npc.id)}
+      >
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    {/if}
+  </span>
 </li>
 
 <style>
@@ -140,10 +156,17 @@
     line-clamp: 2;
   }
 
-  .send {
+  .moves {
     position: absolute;
     top: 50%;
     right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    translate: 0 -50%;
+  }
+
+  .send {
     width: 30px;
     height: 30px;
     min-height: 0;
@@ -155,7 +178,6 @@
     color: var(--pt-gilt);
     font-size: 14px;
     opacity: 0;
-    translate: 0 -50%;
     transition: opacity 140ms ease, background 140ms ease, color 140ms ease;
   }
 

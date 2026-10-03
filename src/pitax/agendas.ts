@@ -54,6 +54,15 @@ export const agendas: Record<string, Agenda> = {
     assets: ['Darkwind Trade House and its overland trade', 'Secure warehouse', 'Blackmail gathered on the other houses'],
     vulnerabilities: ['Helped put Irovetti on the throne', 'Palace papers that name her', 'Bribes and protection eat most of her income', 'No one in Pitax trusts the Strocalles'],
   },
+  temur: {
+    goal: 'Keep his Wardens armed, paid and above the law',
+    clock: 6,
+    progress: 2,
+    allies: ['His unit of loyal Wardens', 'Joravin Pyathe, who needs enforcers on the docks'],
+    enemies: ['Ingras Quill', 'Gasperre Liacenza', 'Drey Yarness', 'Kharne Vareel and the Dealers'],
+    assets: ['One disciplined unit of Wardens, armed and drilled', 'The Iron Fox Armory and its stores', 'Patrol records that name every informer, fence and smuggler in Pitax', 'Warden swordplay backed by occult magic'],
+    vulnerabilities: ['Pitax hates and fears the Wardens', 'His signature fills the Black Cells arrest warrants', 'Ingras Quill’s journal names his men', 'The Liacenza claim to the Armory'],
+  },
   jhofre: {
     goal: 'Win the council’s river trade for the Vascaris',
     clock: 6,
@@ -163,10 +172,10 @@ export const agendas: Record<string, Agenda> = {
     goal: 'Escape punishment and remain the city guard',
     clock: 6,
     progress: 2,
-    allies: ['Nunzio Arpaia'],
+    allies: ['Temur Ganbold', 'Nunzio Arpaia'],
     enemies: ['Ingras Quill', 'Drey Yarness', 'Former Pitaxian rebels'],
     assets: ['Iron Fox Armory barracks and gear', 'Occult magic backing their swordplay'],
-    vulnerabilities: ['Largely disbanded', 'Leaderless after Villamor Koth’s death', 'Killed Ingras Quill’s son', 'The Liacenzas claim the Armory'],
+    vulnerabilities: ['One unit left of a whole city guard', 'Loyal to Temur Ganbold alone', 'Killed Ingras Quill’s son', 'The Liacenzas claim the Armory'],
   },
   annamede: {
     goal: 'Strike back at the PCs and the kingdom with Alasen',

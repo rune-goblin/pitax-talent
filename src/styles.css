@@ -1,4 +1,5 @@
-.pitax-talent-director {
+.pitax-talent-director,
+.pitax-talent-notice {
   --pt-ink: #120916;
   --pt-ink-raised: #1d0f24;
   --pt-ink-line: rgb(220 180 99 / 0.22);

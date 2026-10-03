@@ -1,5 +1,5 @@
 import { MODULE_ID, SOCKET_EVENT, STAGE_FLAG, STATE_FLAG } from './constants';
-import { actName, contestant, REGENT_ID } from './roster';
+import { actName, contestant, petitions, REGENT_ID } from './roster';
 import { awaitingRegent, castVote, normalize, REGENT_ROLL, regentDecision, regentVote, seatOf, type TalentState, type Vote } from './state';
 import { t, tf } from './i18n';
 import { talent } from './talentStore.svelte';
@@ -53,7 +53,7 @@ async function breakTie(sceneId: string, tie: TalentState): Promise<void> {
   const name = contestant(REGENT_ID)?.name ?? REGENT_ID;
   const roll = await new foundry.dice.Roll(REGENT_ROLL).evaluate();
   const message = await roll.toMessage(
-    { speaker: { alias: name }, flavor: tf('regent.flavor', { name, act: actName(tie.contestantIds) }) },
+    { speaker: { alias: name }, flavor: tf(petitions(tie.contestantIds) ? 'regent.flavor' : 'regent.flavorAccepts', { name, act: actName(tie.contestantIds) }) },
     { rollMode: 'publicroll' },
   );
   // Dice So Nice holds the chat card back until its dice land; the stage waits with it.

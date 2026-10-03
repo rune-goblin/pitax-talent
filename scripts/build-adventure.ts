@@ -29,8 +29,12 @@ interface PackEntry { name: string; label?: string; type?: string; banner?: stri
 interface Manifest { id: string; title?: string; description?: string; packs?: PackEntry[] }
 type Doc = { _key?: string } & Record<string, unknown>;
 
-// Adventure embedded-collection fields keyed by the `_key` collection name they accept.
-const COLLECTIONS = ['folders', 'actors', 'items', 'journal', 'scenes', 'macros', 'tables', 'playlists', 'cards'];
+// Adventure embedded-collection fields keyed by the `_key` collection name they accept, with the
+// document type each holds (a Folder's `type` must match it for the doc to file into it).
+const COLLECTIONS: Record<string, string> = {
+  folders: 'Folder', actors: 'Actor', items: 'Item', journal: 'JournalEntry', scenes: 'Scene',
+  macros: 'Macro', tables: 'RollTable', playlists: 'Playlist', cards: 'Cards',
+};
 
 function listDirs(path: string): string[] {
   if (!existsSync(path)) return [];
@@ -61,7 +65,7 @@ export function buildAdventure(opts: { dry?: boolean } = {}): boolean {
     sort: 0,
     flags: {},
   };
-  for (const c of COLLECTIONS) adventure[c] = [];
+  for (const c of Object.keys(COLLECTIONS)) adventure[c] = [];
 
   const counts: Record<string, number> = {};
   for (const dir of bundled) {
@@ -77,6 +81,18 @@ export function buildAdventure(opts: { dry?: boolean } = {}): boolean {
       }
       (adventure[collection] as Doc[]).push(doc);
       counts[collection] = (counts[collection] ?? 0) + 1;
+    }
+  }
+
+  // A folder ref that names no bundled folder of the doc's type imports the doc to the sidebar root.
+  const folderTypes = new Map((adventure.folders as Doc[]).map((f) => [f._id as string, f.type as string]));
+  for (const [collection, documentName] of Object.entries(COLLECTIONS)) {
+    for (const doc of adventure[collection] as Doc[]) {
+      if (doc.folder == null) continue;
+      const type = collection === 'folders' ? doc.type : documentName;
+      if (folderTypes.get(doc.folder as string) !== type) {
+        throw new Error(`${String(doc.name)}: folder ${JSON.stringify(doc.folder)} is not a bundled ${String(type)} folder`);
+      }
     }
   }
 

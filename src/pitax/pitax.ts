@@ -16,7 +16,7 @@ export interface Npc {
 export interface Faction {
   id: string;
   name: string;
-  type: 'Bandit House' | 'Criminals' | 'Faith' | 'Artists';
+  type: 'Bandit House' | 'Criminals' | 'Faith' | 'Artists' | 'Guard';
   colors: string;
   symbol: string;
   clothing: string;
@@ -59,7 +59,7 @@ export const factions: Faction[] = [
     clothing: 'Religious raiment',
     base: 'B13',
     allies: ['cattanei', 'desnans'],
-    enemies: ['strocalle', 'dealers'],
+    enemies: ['strocalle', 'dealers', 'wardens'],
     summary:
       'The oldest and strongest faith in Pitax, housed in the original Cattanei keep. Many Pitaxians credit Irovetti’s death to Calistria’s vengeance, and Drey Yarness’s followers want him on the council.',
   },
@@ -72,7 +72,7 @@ export const factions: Faction[] = [
     clothing: 'Left glove with a dark red mark',
     base: 'B18',
     allies: [],
-    enemies: ['strocalle', 'dealers'],
+    enemies: ['strocalle', 'dealers', 'wardens'],
     summary:
       'Once the richest house, until Irovetti swindled them out of the Iron Fox Trade House and the crown. Lothaire and Berengar died in the Black Cells, and young Gasperre leads what remains, including the Sarain vineyards.',
   },
@@ -88,6 +88,19 @@ export const factions: Faction[] = [
     enemies: ['liacenza', 'cattanei', 'vascari', 'calistrians'],
     summary:
       'Controls land trade and has the closest ties to the criminal element. Eliste helped put Irovetti on the throne, and palace papers that name her now threaten the house’s council seat.',
+  },
+  {
+    id: 'wardens',
+    name: 'Pitax Wardens',
+    type: 'Guard',
+    colors: 'Blue, red',
+    symbol: 'Mailed fist',
+    clothing: 'Blue tabard over steel plate, long red cloak',
+    base: 'B4',
+    allies: [],
+    enemies: ['liacenza', 'calistrians', 'dealers'],
+    summary:
+      'Irovetti’s city guard, feared for the floggings and hangings it staged in the Common Square. Most Wardens deserted when the king fell, but Temur Ganbold holds one loyal unit together in the Iron Fox Armory. He offers the council order at sword point. If it turns him away, his men march out to prey on the countryside.',
   },
   {
     id: 'cattanei',
@@ -111,7 +124,7 @@ export const factions: Faction[] = [
     clothing: 'Long coat with hidden pouches',
     base: 'B6',
     allies: ['strocalle'],
-    enemies: ['desnans', 'calistrians', 'vascari', 'liacenza'],
+    enemies: ['desnans', 'calistrians', 'vascari', 'liacenza', 'wardens'],
     summary:
       'A coalition of drug dealers, alchemists, and crooked merchants. Irovetti protected them for a cut, and with the king dead, palace ledgers of those payments leave them hunting for a new protector.',
   },
@@ -161,6 +174,7 @@ export const npcs: Npc[] = [
   { id: 'xapiri', name: 'Xapiri Yasmina', stats: 'LE female human sorcerer 10', role: 'Chelish exile who controls the Serpent’s Breath Trade House', group: 'faction', faction: 'cattanei', location: 'B9', art: 'xapiri-yasmina' },
   { id: 'gasperre', name: 'Gasperre Liacenza', stats: 'N male human aristocrat 5', role: 'Young head of the Liacenza house; owns the Falling Star', group: 'faction', faction: 'liacenza', location: 'B18', art: 'gasperre-liacenza' },
   { id: 'eliste', name: 'Eliste Strocalle', stats: 'NE female human rogue 8', role: 'Head of the Strocalle house; secret ally of Irovetti', group: 'faction', faction: 'strocalle', location: 'B10', art: 'eliste-strocalle' },
+  { id: 'temur', name: 'Temur Ganbold', stats: 'LE male human magus 12', role: 'Commander of the last loyal Pitax Wardens', group: 'faction', faction: 'wardens', location: 'B4', art: 'pitax-warden' },
   { id: 'jhofre', name: 'Jhofre Vascari', stats: 'LN male human rogue 9', role: 'Head of the Vascari house', group: 'faction', faction: 'vascari', location: 'B3', art: 'jhofre-vascari' },
   { id: 'kharne', name: 'Kharne Vareel', stats: 'NE male gnome rogue 13', role: 'Ringleader of the Dealers', group: 'faction', faction: 'dealers', location: 'B6', art: 'kharne-vereel' },
   { id: 'drey', name: 'Drey Yarness', stats: 'CN male human cleric of Calistria 10', role: 'High priest of Calistria', group: 'faction', faction: 'calistrians', location: 'B13', art: 'drey-yarness' },
@@ -178,7 +192,7 @@ export const npcs: Npc[] = [
   { id: 'engelidis', name: 'Engelidis', role: 'Naga consort; guards the lagoon and knows where Briar is hidden', group: 'court', location: 'B15', art: 'engelidis', fate: 'Deceased' },
   { id: 'nunzio', name: 'Nunzio Arpaia', stats: 'N male human royal guard', role: 'Pitax Warden; Rushlight master of ceremonies', group: 'court', art: 'nunzio-arpaia', fate: 'In hiding' },
   { id: 'velemandr', name: 'Velemandr', role: 'Royal messenger who carries the Rushlight invitation', group: 'court', art: 'velemandr', fate: 'In hiding' },
-  { id: 'wardens', name: 'Pitax Wardens', role: 'City guard, based at the Iron Fox Armory', group: 'court', location: 'B4', art: 'pitax-warden', fate: 'Disbanded' },
+  { id: 'wardens', name: 'The Last Wardens', role: 'Temur Ganbold’s unit, the one Warden company still under arms', group: 'faction', faction: 'wardens', location: 'B4', art: 'pitax-warden' },
 
   { id: 'annamede', name: 'Annamede Belavarah', stats: 'CN female human bard 13', role: 'Comedian and bard; took Irovetti’s patronage', group: 'court', location: 'B12', art: 'annamede-belavarah', fate: 'Unknown' },
   { id: 'cayid', name: 'Cayid Caconna', stats: 'CN male human artisan 10', role: 'Master sculptor; holds a stolen palace key', group: 'city', location: 'B16', art: 'cayid-caconna' },
@@ -194,7 +208,7 @@ export const locations: Location[] = [
   { code: 'B1', name: 'The Devil’s Tusks', npcs: ['saufie'], factions: [], structures: [], note: 'Twin harbour lighthouses.' },
   { code: 'B2', name: 'Moondock', npcs: [], factions: [], structures: [], note: 'Four docks. A dockworker has seen clockwork parts and explosives bound for the palace.' },
   { code: 'B3', name: 'Riversong Trade House', npcs: ['jhofre'], factions: ['vascari'], structures: ['Waterfront'], note: 'River trade.' },
-  { code: 'B4', name: 'Iron Fox Armory', npcs: ['wardens'], factions: [], structures: ['Barracks'], note: 'Former Liacenza trade house, now the Wardens’ base.' },
+  { code: 'B4', name: 'Iron Fox Armory', npcs: ['temur', 'wardens'], factions: ['wardens'], structures: ['Barracks'], note: 'Former Liacenza trade house, now the Wardens’ base.' },
   { code: 'B5', name: 'The Dwarf’s Cave', npcs: ['joravin'], factions: [], structures: [], note: 'Tariff office.' },
   { code: 'B6', name: 'The Rose Tower', npcs: ['kharne'], factions: ['dealers'], structures: ['Alchemy Lab', 'Illicit Market'], note: 'Ruined lighthouse; drug laboratory.' },
   { code: 'B7', name: 'Tower of the Fallen', npcs: [], factions: ['calistrians'], structures: ['Graveyard'], note: 'Guard tower turned sepulcher; ghoul-infested.' },

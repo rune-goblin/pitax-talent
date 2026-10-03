@@ -7,11 +7,13 @@
     "noGM": "No GM is connected to count your vote.",
     "verdict": {
       "appointed": "{name} appointed to the council",
+      "accepted": "{name} accepted",
       "rejected": "{name} rejected"
     },
     "regent": {
       "decides": "{name} decides",
-      "flavor": "{name} breaks the tie on {act}. Over 10 appoints."
+      "flavor": "{name} breaks the tie on {act}. Over 10 appoints.",
+      "flavorAccepts": "{name} breaks the tie on {act}. Over 10 accepts."
     },
     "poster": "Pitax Has Got Talent",
     "director": {
@@ -28,6 +30,7 @@
       "empty": "— empty —",
       "onStage": "On stage",
       "appointed": "Appointed",
+      "accepted": "Accepted",
       "rejected": "Rejected",
       "stageEmpty": "The stage is empty",
       "showDossier": "Show {name}'s dossier",
@@ -36,6 +39,8 @@
       "undo": "Take back {judge}'s vote",
       "bringOn": "Bring On",
       "bringOnNamed": "Bring on {name}",
+      "comeOnNamed": "Come on: {name} joins the stage",
+      "dismiss": "Dismiss",
       "clear": "Clear Stage",
       "reset": "Reset votes",
       "group": {

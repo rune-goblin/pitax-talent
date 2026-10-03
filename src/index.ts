@@ -6,6 +6,7 @@ import { StageLayer } from './stage/StageLayer';
 import { isStage, refreshStore, registerSocket } from './sync';
 import { talent } from './talentStore.svelte';
 import { DirectorApp } from './ui/DirectorApp';
+import { NoticeApp } from './ui/NoticeApp';
 import { VoteButtonApp } from './ui/VoteButtonApp';
 
 const POSTER = `modules/${MODULE_ID}/assets/talent/poster.webp`;
@@ -64,6 +65,7 @@ Hooks.once('ready', () => {
   // `api` is the Foundry convention for a public API, but isn't a typed field on Module.
   if (module) (module as { api?: typeof api }).api = api;
   void new VoteButtonApp().render({ force: true });
+  void new NoticeApp().render({ force: true });
   void promptAdventureImport();
 });
 

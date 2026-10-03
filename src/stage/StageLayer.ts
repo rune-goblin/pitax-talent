@@ -1,10 +1,9 @@
 import { BUZZER_SETTING, CHECK, CHIME_SETTING, MODULE_ID, X_OFF, X_ON, X_ON_GLOW } from '../constants';
-import { tf } from '../i18n';
-import { actName, contestant, portraitPath, REGENT_ID } from '../roster';
-import { allVoted, SEAT_COUNT, spotlight, tied, verdict, type TalentState, type Verdict, type Vote } from '../state';
+import { contestant, portraitPath, REGENT_ID } from '../roster';
+import { allVoted, SEAT_COUNT, spotlight, tied, verdict, type TalentState, type Vote } from '../state';
 import { mutate } from '../sync';
 import { talent, watchState } from '../talentStore.svelte';
-import { figureOffsets, LAYOUT, STAGE, stepBack, walkPose, xCenters } from './pose';
+import { LAYOUT, slotOffset, slots, STAGE, stepBack, walkPose, xCenters } from './pose';
 
 const { CanvasAnimation } = foundry.canvas.animation;
 const { loadTexture } = foundry.canvas;
@@ -15,6 +14,7 @@ const EXIT_MS = 1400;
 const WITHDRAW_MS = 2200;
 const POP_MS = 380;
 const SPOTLIGHT_MS = 450;
+const SLIDE_MS = 1200;
 const GLOW_MS = 900;
 // The white X shrinks over the first SHRINK of the swap; the check springs up from CHECK_FROM on.
 const APPROVE_MS = 700;
@@ -26,16 +26,11 @@ const REFLECTION = 0.18;
 const ASIDE_SCALE = 0.75;
 const ASIDE_DIM = 0.45;
 const REGENT_MS = 1100;
-const VERDICT_MS = 1400;
 // A callout springs up this far into its animation, once the vote that raised it has popped.
 const CALLOUT_FROM = 0.3;
 const FADE_MS = 400;
 // Valerie's head and shoulders in her full-length portrait: centre as fractions of its size, radius of its width.
 const REGENT_CROP = { x: 0.62, y: 0.19, r: 0.255 };
-const VERDICT_LOOK = {
-  appointed: { fill: '#f3d27a', line: 0xdcb463 },
-  rejected: { fill: '#ffffff', line: 0xe2263f },
-} as const;
 
 interface Figure {
   id: string;
@@ -46,6 +41,12 @@ interface Figure {
   plate: PIXI.Container;
   /** 0 = sharing the stage, 1 = stepped aside for the spotlight. */
   aside: { f: number };
+  /** Place in the slate, in spacing units from centre stage; tweens as the others make room or close ranks. */
+  slot: { x: number };
+  /** How far this figure may walk with the act: 0 holds them in the archway, 1 lets them keep pace. */
+  enter: { f: number };
+  /** Dismissed while the rest stay, and walking back into the archway. */
+  leaving: boolean;
 }
 
 interface XMark {
@@ -65,14 +66,9 @@ interface Regent {
   check: PIXI.Sprite;
 }
 
-interface Banner {
-  root: PIXI.Container;
-  card: PIXI.Graphics;
-  label: PIXI.Text;
-}
-
 const SEAT_ANIMATIONS = ['pop', 'glow', 'approve'];
-const CALLOUT_ANIMATIONS = ['regent', 'regentMark', 'verdict'];
+const RECAST_ANIMATIONS = ['enter', 'leave', 'slide'];
+const CALLOUT_ANIMATIONS = ['regent', 'regentMark'];
 
 /** The judge's character, first name only; falls back to the player's own name. */
 function judgeName(userId: string | null): string {
@@ -92,7 +88,6 @@ export class StageLayer {
   #figures: Figure[] = [];
   #marks: XMark[] = [];
   #regent!: Regent;
-  #banner!: Banner;
   #nameStyle!: PIXI.TextStyle;
   #walk = { p: 0 };
   #shownIds = '';
@@ -120,7 +115,7 @@ export class StageLayer {
     StageLayer.#current = undefined;
     if (!layer) return;
     layer.#unwatch?.();
-    CanvasAnimation.terminateAnimation(layer.#animName('walk'));
+    for (const part of ['walk', 'spotlight', ...RECAST_ANIMATIONS]) CanvasAnimation.terminateAnimation(layer.#animName(part));
     // The check's swap drives its containers from ontick, which would throw once they're destroyed.
     layer.#marks.forEach((_, seat) => layer.#stopSeat(seat));
     for (const part of CALLOUT_ANIMATIONS) CanvasAnimation.terminateAnimation(layer.#animName(part));
@@ -202,12 +197,11 @@ export class StageLayer {
     });
 
     this.#regent = this.#buildRegent(portrait as PIXI.Texture | null, textures[1] as PIXI.Texture, textures[3] as PIXI.Texture);
-    this.#banner = this.#buildBanner();
-    this.#root.addChild(this.#dim, this.#stage, ...this.#marks.map((m) => m.root), this.#regent.root, this.#banner.root);
+    this.#root.addChild(this.#dim, this.#stage, ...this.#marks.map((m) => m.root), this.#regent.root);
   }
 
   #buildRegent(portrait: PIXI.Texture | null, xTexture: PIXI.Texture, checkTexture: PIXI.Texture): Regent {
-    const { y, size, captionY, markSize } = LAYOUT.regent;
+    const { y, size, markSize } = LAYOUT.regent;
     const r = (size / 2) * this.#k;
     const root = new PIXI.Container();
     root.name = 'regent';
@@ -223,9 +217,6 @@ export class StageLayer {
       root.addChild(face, mask);
     }
     const ring = new PIXI.Graphics().lineStyle(8 * this.#k, 0xdcb463, 1).drawCircle(0, 0, r);
-    const caption = new PreciseText(tf('regent.decides', { name: contestant(REGENT_ID)?.name ?? REGENT_ID }), this.#nameStyle);
-    caption.anchor.set(0.5, 0);
-    caption.position.set(0, (captionY - y) * this.#k);
     const mark = new PIXI.Container();
     mark.position.set(r * Math.SQRT1_2, r * Math.SQRT1_2);
     const [x, check] = [xTexture, checkTexture].map((texture) => {
@@ -235,36 +226,8 @@ export class StageLayer {
       return sprite;
     });
     mark.addChild(x, check);
-    root.addChild(ring, caption, mark);
+    root.addChild(ring, mark);
     return { root, mark, x, check };
-  }
-
-  #buildBanner(): Banner {
-    const root = new PIXI.Container();
-    root.name = 'verdict';
-    root.alpha = 0;
-    root.position.set(this.#x(LAYOUT.centerX), this.#y(LAYOUT.verdict.y));
-    const style = this.#nameStyle.clone();
-    style.fontSize = LAYOUT.verdict.size * this.#k;
-    style.strokeThickness = 6 * this.#k;
-    style.wordWrap = true;
-    style.wordWrapWidth = LAYOUT.verdict.width * this.#k;
-    style.align = 'center';
-    const label = new PreciseText('', style);
-    label.anchor.set(0.5);
-    const card = new PIXI.Graphics();
-    root.addChild(card, label);
-    return { root, card, label };
-  }
-
-  #setBanner(state: TalentState, kind: Verdict): void {
-    const { card, label } = this.#banner;
-    const look = VERDICT_LOOK[kind];
-    label.text = tf(`verdict.${kind}`, { name: actName(state.contestantIds) });
-    label.style.fill = look.fill;
-    const width = label.width + 120 * this.#k;
-    const height = label.height + 50 * this.#k;
-    card.clear().lineStyle(6 * this.#k, look.line, 1).beginFill(0x1a0a12, 0.9).drawRoundedRect(-width / 2, -height / 2, width, height, 18 * this.#k).endFill();
   }
 
   #render(next: TalentState): void {
@@ -283,8 +246,6 @@ export class StageLayer {
     this.#dim.alpha = decided === 'rejected' ? DIM : 0;
     this.#regent.root.alpha = tied(state) ? 1 : 0;
     this.#settleRegent(state.regent);
-    if (decided) this.#setBanner(state, decided);
-    this.#banner.root.alpha = decided ? 1 : 0;
   }
 
   #label(state: TalentState): void {
@@ -305,12 +266,17 @@ export class StageLayer {
     if (arrived) {
       await this.#setContestants(after.contestantIds);
       await this.#animateWalk(0, 1, ENTRANCE_MS);
-    } else if (!after.contestantIds.length && before.contestantIds.length) {
+      return;
+    }
+    if (!after.contestantIds.length && before.contestantIds.length) {
       await this.#animateWalk(this.#walk.p, 0, EXIT_MS);
       this.#stage.visible = false;
-    } else if (after.spotlightId !== before.spotlightId) {
-      this.#spotlight(after);
-    } else if (allVoted(after) && !allVoted(before)) {
+      return;
+    }
+    if (after.contestantIds.join() !== before.contestantIds.join()) void this.#recast(after);
+    else if (after.spotlightId !== before.spotlightId) this.#spotlight(after);
+    // A newcomer or a dismissal after the verdict restarts the vote, which brings the act forward again.
+    if (allVoted(after) && !allVoted(before)) {
       await this.#animateWalk(this.#walk.p, 0, WITHDRAW_MS);
     } else if (!allVoted(after) && allVoted(before) && after.contestantIds.length) {
       await this.#animateWalk(this.#walk.p, 1, ENTRANCE_MS);
@@ -329,10 +295,6 @@ export class StageLayer {
     if (after.regent !== before.regent) {
       if (after.regent) this.#popRegent(after.regent);
       else this.#settleRegent(null);
-    }
-    if (now !== was) {
-      if (now) this.#setBanner(after, now);
-      this.#reveal(this.#banner.root, 'verdict', !!now, VERDICT_MS);
     }
   }
 
@@ -379,9 +341,51 @@ export class StageLayer {
   async #setContestants(ids: string[]): Promise<void> {
     const key = ids.join(',');
     this.#shownIds = key;
+    for (const part of RECAST_ANIMATIONS) CanvasAnimation.terminateAnimation(this.#animName(part));
     for (const figure of this.#figures) figure.root.destroy({ children: true });
     this.#figures = [];
     this.#stage.visible = ids.length > 0;
+    const loaded = await this.#load(ids);
+    if (this.#shownIds !== key) return;
+    const at = slots(loaded.length);
+    this.#figures = loaded.map(({ id, texture }, i) => this.#figure(id, texture, at[i], 1, 0));
+    this.#pickable();
+  }
+
+  /** Newcomers walk on from the archway and the dismissed walk back into it, while the rest slide over to make room or close ranks. */
+  async #recast(state: TalentState): Promise<void> {
+    const ids = state.contestantIds;
+    const key = ids.join(',');
+    this.#shownIds = key;
+    // Ending the walk-off now keeps its figures alive in case this cast brings one of them back.
+    CanvasAnimation.terminateAnimation(this.#animName('leave'));
+    const loaded = await this.#load(ids.filter((id) => !this.#figures.some((f) => f.id === id)));
+    if (this.#shownIds !== key) return;
+    for (const { id, texture } of loaded) this.#figures.push(this.#figure(id, texture, 0, 0, asideFor(id, state)));
+    for (const figure of this.#figures) figure.leaving = !ids.includes(figure.id);
+    const cast = ids.map((id) => this.#figures.find((f) => f.id === id)).filter((f) => !!f);
+    const leaving = this.#figures.filter((f) => f.leaving);
+    // Anyone walking between the archway and the front passes behind those already standing there.
+    for (const figure of this.#figures) if (figure.leaving || figure.enter.f < 1) this.#stage.setChildIndex(figure.root, 0);
+    const at = slots(cast.length);
+    // Anyone still in the archway takes their place there and walks straight to it.
+    cast.forEach((figure, i) => !figure.enter.f && (figure.slot.x = at[i]));
+    this.#pickable();
+    this.#spotlight(state);
+
+    const ontick = () => this.#pose(this.#walk.p);
+    const tween = (part: string, attributes: Parameters<typeof CanvasAnimation.animate>[0], duration: number, easing?: 'easeInOutCosine') =>
+      CanvasAnimation.animate(attributes, { name: this.#animName(part), duration, easing, ontick });
+    void tween('slide', cast.map((f, i) => ({ parent: f.slot, attribute: 'x', to: at[i] })), SLIDE_MS, 'easeInOutCosine');
+    void tween('enter', cast.map((f) => ({ parent: f.enter, attribute: 'f', to: 1 })), ENTRANCE_MS);
+    if (!leaving.length) return;
+    const gone = await tween('leave', leaving.map((f) => ({ parent: f.enter, attribute: 'f', to: 0 })), EXIT_MS);
+    if (!gone) return;
+    for (const figure of leaving) figure.root.destroy({ children: true });
+    this.#figures = this.#figures.filter((f) => !leaving.includes(f));
+  }
+
+  async #load(ids: string[]): Promise<{ id: string; texture: PIXI.Texture }[]> {
     const loaded = await Promise.all(
       ids.map(async (id) => {
         const npc = contestant(id);
@@ -389,22 +393,27 @@ export class StageLayer {
         return { id, texture };
       }),
     );
-    if (this.#shownIds !== key) return;
-    const pickable = game.user.isGM && ids.length > 1;
-    for (const { id, texture } of loaded) {
-      if (!texture) continue;
-      const sprite = new PIXI.Sprite(texture);
-      const reflection = new PIXI.Sprite(texture);
-      sprite.anchor.set(0.5, 1);
-      reflection.anchor.set(0.5, 1);
-      reflection.scale.y = -1;
-      const plate = this.#nameplate(contestant(id)?.name ?? '');
-      if (pickable) pickOnClick(plate, id);
-      const root = new PIXI.Container();
-      root.addChild(reflection, sprite, plate);
-      this.#stage.addChild(root);
-      this.#figures.push({ id, root, sprite, reflection, plate, aside: { f: 0 } });
-    }
+    return loaded.filter((l): l is { id: string; texture: PIXI.Texture } => !!l.texture);
+  }
+
+  #figure(id: string, texture: PIXI.Texture, slot: number, enter: number, aside: number): Figure {
+    const sprite = new PIXI.Sprite(texture);
+    const reflection = new PIXI.Sprite(texture);
+    sprite.anchor.set(0.5, 1);
+    reflection.anchor.set(0.5, 1);
+    reflection.scale.y = -1;
+    const plate = this.#nameplate(contestant(id)?.name ?? '');
+    if (game.user.isGM) pickOnClick(plate, id);
+    const root = new PIXI.Container();
+    root.addChild(reflection, sprite, plate);
+    this.#stage.addChild(root);
+    return { id, root, sprite, reflection, plate, aside: { f: aside }, slot: { x: slot }, enter: { f: enter }, leaving: false };
+  }
+
+  /** The GM's nameplates take spotlight clicks only while two or more share the stage. */
+  #pickable(): void {
+    const on = game.user.isGM && this.#figures.filter((f) => !f.leaving).length > 1;
+    for (const figure of this.#figures) figure.plate.eventMode = on && !figure.leaving ? 'static' : 'none';
   }
 
   #nameplate(name: string): PIXI.Container {
@@ -424,17 +433,16 @@ export class StageLayer {
 
   #pose(p: number): void {
     this.#walk.p = p;
-    const pose = walkPose(p);
-    const offsets = figureOffsets(this.#figures.length, pose.height);
-    this.#figures.forEach((figure, i) => {
-      const { root, sprite, reflection, plate, aside } = figure;
+    for (const figure of this.#figures) {
+      const { root, sprite, reflection, plate, aside, slot, enter } = figure;
+      const pose = walkPose(Math.min(p, enter.f));
       // Hidden figures leave hit testing too, so a walked-off slate's plates can't catch clicks.
       root.visible = pose.alpha > 0;
       const tex = sprite.texture;
       const stood = stepBack(pose, 1 - (1 - ASIDE_SCALE) * aside.f);
       const height = stood.height * this.#k;
       const width = tex.height ? (height * tex.width) / tex.height : 0;
-      const x = this.#x(LAYOUT.centerX + offsets[i]);
+      const x = this.#x(LAYOUT.centerX + slotOffset(slot.x, pose.height));
       const feet = this.#y(stood.feet);
       const tint = Math.round(pose.brightness * (1 - ASIDE_DIM * aside.f) * 255);
       sprite.position.set(x, feet);
@@ -451,7 +459,7 @@ export class StageLayer {
       plate.position.set(x, feet + LAYOUT.figureName.below * this.#k);
       plate.scale.set((LAYOUT.figureName.size / LAYOUT.xRow.nameSize) * (height / (LAYOUT.front.height * this.#k)));
       plate.alpha = pose.alpha * (1 - ASIDE_DIM * aside.f);
-    });
+    }
   }
 
   #spotlight(state: TalentState): void {
@@ -550,7 +558,6 @@ const asideFor = (id: string, state: TalentState): number => (state.spotlightId 
 
 /** The GM clicks a slate member's nameplate to throw the spotlight on them, or again to lift it. */
 function pickOnClick(plate: PIXI.Container, id: string): void {
-  plate.eventMode = 'static';
   plate.cursor = 'pointer';
   plate.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
     if (event.button !== 0 || !talent.sceneId) return;

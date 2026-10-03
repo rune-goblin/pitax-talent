@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assignSeat, awaitingRegent, bringOn, castVote, clearResults, clearStage, emptyState, normalize, regentDecision, regentVote, resetVotes, retractVote, ruling, seatOf, setClock, spotlight, tally, tied, verdict, type TalentState, type Vote } from './state';
+import { assignSeat, awaitingRegent, bringOn, castVote, clearResults, clearStage, dismiss, emptyState, join, normalize, regentDecision, regentVote, resetVotes, retractVote, ruling, seatOf, setClock, spotlight, tally, tied, verdict, type TalentState, type Vote } from './state';
 
 const onStage = () => bringOn(emptyState(), ['jhofre'], 'jhofre');
 const voted = (votes: Vote[], state = onStage()) => votes.reduce((s, vote, seat) => castVote(s, seat, vote), state);
@@ -67,6 +67,53 @@ describe('bringOn', () => {
     expect(bringOn(emptyState(), ['salvarri', 'xapiri'], 'cattanei').contestantIds).toEqual(['salvarri', 'xapiri']);
     const state = onStage();
     expect(bringOn(state, [], '')).toBe(state);
+  });
+});
+
+describe('join', () => {
+  const key = (ids: string[]) => ids.join('+');
+
+  it('adds the newcomer beside the act without a fresh entrance and restarts the vote', () => {
+    const state = castVote(onStage(), 0, 'x');
+    const next = join(state, 'drey', key);
+    expect(next.contestantIds).toEqual(['jhofre', 'drey']);
+    expect(next.act).toBe('jhofre+drey');
+    expect(next.votes).toEqual([null, null, null, null]);
+    expect(next.entrance).toBe(state.entrance);
+  });
+
+  it('walks a newcomer on alone onto an empty stage', () => {
+    const next = join(emptyState(), 'drey', key);
+    expect(next.contestantIds).toEqual(['drey']);
+    expect(next.entrance).toBe(1);
+  });
+
+  it('ignores someone already on stage', () => {
+    const state = onStage();
+    expect(join(state, 'jhofre', key)).toBe(state);
+  });
+});
+
+describe('dismiss', () => {
+  const key = (ids: string[]) => ids.join('+');
+  const trio = () => bringOn(emptyState(), ['salvarri', 'xapiri', 'drey'], 'trio');
+
+  it('closes ranks around the rest and restarts the vote', () => {
+    const next = dismiss(castVote(trio(), 1, 'check'), ['xapiri'], key);
+    expect(next.contestantIds).toEqual(['salvarri', 'drey']);
+    expect(next.act).toBe('salvarri+drey');
+    expect(next.votes).toEqual([null, null, null, null]);
+  });
+
+  it('lifts the spotlight only from someone who leaves', () => {
+    expect(dismiss(spotlight(trio(), 'xapiri'), ['xapiri'], key).spotlightId).toBeNull();
+    expect(dismiss(spotlight(trio(), 'drey'), ['xapiri'], key).spotlightId).toBe('drey');
+  });
+
+  it('empties the stage with the last of them and ignores anyone not on it', () => {
+    expect(dismiss(onStage(), ['jhofre'], key)).toEqual(clearStage(onStage()));
+    const state = onStage();
+    expect(dismiss(state, ['drey'], key)).toBe(state);
   });
 });
 

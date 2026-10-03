@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { actKey, actName, candidatesOf, dossier, factionById, factionOnStage, isCandidate, OTHER, rosterGroups } from './roster';
+import { actKey, actName, candidatesOf, dossier, factionById, factionOnStage, isCandidate, OTHER, outcome, rosterGroups } from './roster';
 import { portraitNames } from './pitax/portraits';
 
 describe('rosterGroups', () => {
@@ -51,6 +51,10 @@ describe('candidatesOf', () => {
     expect(candidatesOf(factionById('vascari')!).map((n) => n.id)).toEqual(['jhofre']);
   });
 
+  it('sends the Wardens’ commander out alone, without the unit he brings', () => {
+    expect(candidatesOf(factionById('wardens')!).map((n) => n.id)).toEqual(['temur']);
+  });
+
   it('puts the faction head first', () => {
     expect(candidatesOf(factionById('academy')!)[0].id).toBe('atalia');
     expect(candidatesOf(factionById('cattanei')!)[0].id).toBe('salvarri');
@@ -77,5 +81,23 @@ describe('factionOnStage', () => {
     expect(factionOnStage(['salvarri'])).toBeUndefined();
     expect(factionOnStage([])).toBeUndefined();
     expect(factionOnStage(['jhofre'])?.id).toBe('vascari');
+  });
+});
+
+describe('outcome', () => {
+  it('appoints petitioners, with or without a faction', () => {
+    expect(outcome('appointed', ['salvarri', 'xapiri'])).toBe('appointed');
+    expect(outcome('appointed', ['joravin'])).toBe('appointed');
+  });
+
+  it('accepts an act with anyone on stage who has no case for a seat', () => {
+    expect(outcome('appointed', ['annamede'])).toBe('accepted');
+    expect(outcome('appointed', ['wardens'])).toBe('accepted');
+    expect(outcome('appointed', ['jhofre', 'annamede'])).toBe('accepted');
+  });
+
+  it('rejects petitioners and everyone else alike', () => {
+    expect(outcome('rejected', ['jhofre'])).toBe('rejected');
+    expect(outcome('rejected', ['annamede'])).toBe('rejected');
   });
 });

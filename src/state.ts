@@ -155,6 +155,25 @@ export function bringOn(state: TalentState, contestantIds: string[], act: string
   return { ...state, contestantIds: [...contestantIds], act, spotlightId: null, votes: emptyState().votes, regent: null, entrance: state.entrance + 1 };
 }
 
+type ActKey = (contestantIds: string[]) => string;
+
+/** A newcomer joins whoever stands there, which makes a new act, so the vote starts over; onto an empty stage they walk on alone. */
+export function join(state: TalentState, id: string, actKey: ActKey): TalentState {
+  if (state.contestantIds.includes(id)) return state;
+  const ids = [...state.contestantIds, id];
+  if (ids.length === 1) return bringOn(state, ids, actKey(ids));
+  return { ...state, contestantIds: ids, act: actKey(ids), votes: emptyState().votes, regent: null };
+}
+
+/** The rest close ranks as a new act, so the vote starts over; dismissing the last empties the stage. */
+export function dismiss(state: TalentState, ids: string[], actKey: ActKey): TalentState {
+  const rest = state.contestantIds.filter((id) => !ids.includes(id));
+  if (rest.length === state.contestantIds.length) return state;
+  if (!rest.length) return clearStage(state);
+  const spotlightId = state.spotlightId && rest.includes(state.spotlightId) ? state.spotlightId : null;
+  return { ...state, contestantIds: rest, act: actKey(rest), spotlightId, votes: emptyState().votes, regent: null };
+}
+
 /** Single out one contestant of the slate; the same id again lifts the spotlight. */
 export function spotlight(state: TalentState, id: string): TalentState {
   if (!state.contestantIds.includes(id)) return state;

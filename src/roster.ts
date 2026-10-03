@@ -6,6 +6,7 @@ import { agendas, type Agenda } from './pitax/agendas';
 import { cases, type CouncilCase } from './pitax/cases';
 import { consequences, type Consequences } from './pitax/consequences';
 import { MODULE_ID } from './constants';
+import type { Verdict } from './state';
 
 export const OTHER = 'other';
 
@@ -17,7 +18,7 @@ export interface RosterGroup {
 
 const hasPortrait = (npc: Npc) => !!npc.art && portraitNames.has(npc.art);
 
-/** The nine factions in council order, then everyone else with a portrait. */
+/** The factions in council order, then everyone else with a portrait. */
 export function rosterGroups(otherName: string): RosterGroup[] {
   const staged = npcs.filter(hasPortrait);
   const groups = factions.map((f) => ({ id: f.id, name: f.name, members: staged.filter((n) => n.faction === f.id) }));
@@ -82,6 +83,18 @@ export const factionById = (id: string): Faction | undefined => factions.find((f
 /** What the verdict calls the act: its faction for a whole slate, else the contestants by name. */
 export const actName = (ids: string[]): string =>
   factionOnStage(ids)?.name ?? ids.map((id) => contestant(id)?.name ?? id).join(' & ');
+
+/** An act is petitioning for a council seat only when everyone in it has a case to make. */
+export const petitions = (ids: string[]): boolean =>
+  ids.length > 0 && ids.every((id) => {
+    const npc = contestant(id);
+    return !!npc && isCandidate(npc);
+  });
+
+export type Outcome = Verdict | 'accepted';
+
+/** How the show words a verdict: an act with no seat at stake wins acceptance instead of an appointment. */
+export const outcome = (kind: Verdict, ids: string[]): Outcome => (kind === 'appointed' && !petitions(ids) ? 'accepted' : kind);
 
 /** The regent who casts the deciding vote on a tie. */
 export const REGENT_ID = 'valerie';

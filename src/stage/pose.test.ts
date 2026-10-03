@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { figureOffsets, LAYOUT, stepBack, walkPose, xCenters } from './pose';
+import { LAYOUT, slotOffset, slots, stepBack, walkPose, xCenters } from './pose';
 
 describe('walkPose', () => {
   it('starts dim and invisible in the archway', () => {
@@ -47,15 +47,21 @@ describe('xCenters', () => {
   });
 });
 
-describe('figureOffsets', () => {
-  it('keeps a lone figure at centre and spreads a pair evenly', () => {
-    expect(figureOffsets(1, 1500)).toEqual([0]);
-    const [a, b] = figureOffsets(2, 1500);
-    expect(a).toBeCloseTo(-b);
-    expect(b).toBeGreaterThan(0);
+describe('slots', () => {
+  it('keeps a lone figure at centre and spreads a slate evenly about it', () => {
+    expect(slots(1)).toEqual([0]);
+    expect(slots(2)).toEqual([-0.5, 0.5]);
+    expect(slots(3)).toEqual([-1, 0, 1]);
+  });
+});
+
+describe('slotOffset', () => {
+  it('mirrors about centre stage', () => {
+    expect(slotOffset(-0.5, 1500)).toBeCloseTo(-slotOffset(0.5, 1500));
+    expect(slotOffset(0.5, 1500)).toBeGreaterThan(0);
   });
 
-  it('closes the pair up as the figures shrink', () => {
-    expect(figureOffsets(2, 720)[1]).toBeLessThan(figureOffsets(2, 1500)[1]);
+  it('closes the slate up as the figures shrink', () => {
+    expect(slotOffset(0.5, 720)).toBeLessThan(slotOffset(0.5, 1500));
   });
 });
