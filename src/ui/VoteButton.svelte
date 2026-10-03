@@ -43,7 +43,7 @@
   .vote-row {
     position: fixed;
     left: 50%;
-    bottom: 150px;
+    bottom: var(--pt-vote-bottom);
     translate: -50% 0;
     z-index: 70;
     display: flex;
@@ -52,8 +52,8 @@
   }
 
   button {
-    width: 80px;
-    height: 80px;
+    width: var(--pt-vote-size);
+    height: var(--pt-vote-size);
     padding: 6px;
     border: 2px solid rgb(212 175 55 / 0.7);
     border-radius: 50%;

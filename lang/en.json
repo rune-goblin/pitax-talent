@@ -15,6 +15,9 @@
       "flavor": "{name} breaks the tie on {act}. Over 10 appoints.",
       "flavorAccepts": "{name} breaks the tie on {act}. Over 10 accepts."
     },
+    "notice": {
+      "close": "Close"
+    },
     "poster": "Pitax Has Got Talent",
     "director": {
       "title": "Talent Director",

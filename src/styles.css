@@ -16,6 +16,13 @@
   --pt-body: var(--font-sans, 'Signika', sans-serif);
 }
 
+/* The notice centres on the players' vote row, so the GM and every player see it in one spot. */
+.pitax-talent-vote,
+.pitax-talent-notice {
+  --pt-vote-bottom: 150px;
+  --pt-vote-size: 80px;
+}
+
 .pitax-talent-director .window-content {
   padding: 0;
   background: var(--pt-ink);
