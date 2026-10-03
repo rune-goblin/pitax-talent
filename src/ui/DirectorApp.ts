@@ -8,7 +8,7 @@ export class DirectorApp extends SvelteApp {
     // The panel carries its own dark palette, so Foundry's form controls inside must be dark in either core theme.
     classes: [MODULE_ID, `${MODULE_ID}-director`, 'themed', 'theme-dark'],
     window: { title: `${MODULE_ID}.director.title`, icon: 'fa-solid fa-masks-theater', resizable: true },
-    position: { left: 110, top: 70, width: 580, height: 780 },
+    position: { left: 110, top: 70, width: 660, height: 860 },
   };
 
   protected component = Director;

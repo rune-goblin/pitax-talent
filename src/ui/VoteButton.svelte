@@ -1,30 +1,59 @@
 <script lang="ts">
-  import { MODULE_ID, X_OFF, X_ON } from '../constants';
+  import { CHECK, CHECK_OFF, X_OFF, X_ON } from '../constants';
+  import { t } from '../i18n';
   import { seatOf } from '../state';
-  import { vote } from '../sync';
+  import { sendVote } from '../sync';
   import { talent } from '../talentStore.svelte';
 
   const seat = $derived(seatOf(talent.state, game.user.id));
-  const lit = $derived(seat >= 0 && talent.state.votes[seat]);
-  const ready = $derived(!!talent.state.contestantId && !lit);
-  const label = game.i18n.localize(`${MODULE_ID}.vote`);
+  const cast = $derived(seat >= 0 ? talent.state.votes[seat] : null);
+  const ready = $derived(talent.state.contestantIds.length > 0 && !cast);
+  const xLabel = t('vote.x');
+  const checkLabel = t('vote.check');
 </script>
 
 {#if talent.sceneId && seat >= 0}
-  <button type="button" class="x-button" class:lit disabled={!ready} aria-label={label} title={label} onclick={vote}>
-    <img src={lit ? X_ON : X_OFF} alt="" />
-  </button>
+  <div class="vote-row">
+    <button
+      type="button"
+      class="x-button"
+      class:lit={cast === 'x'}
+      disabled={!ready}
+      aria-label={xLabel}
+      title={xLabel}
+      onclick={() => sendVote('x')}
+    >
+      <img src={cast === 'x' ? X_ON : X_OFF} alt="" />
+    </button>
+    <button
+      type="button"
+      class="check-button"
+      class:lit={cast === 'check'}
+      disabled={!ready}
+      aria-label={checkLabel}
+      title={checkLabel}
+      onclick={() => sendVote('check')}
+    >
+      <img src={cast === 'check' ? CHECK : CHECK_OFF} alt="" />
+    </button>
+  </div>
 {/if}
 
 <style>
-  .x-button {
+  .vote-row {
     position: fixed;
     left: 50%;
     bottom: 150px;
     translate: -50% 0;
     z-index: 70;
-    width: 96px;
-    height: 96px;
+    display: flex;
+    gap: 20px;
+    pointer-events: none;
+  }
+
+  button {
+    width: 80px;
+    height: 80px;
     padding: 6px;
     border: 2px solid rgb(212 175 55 / 0.7);
     border-radius: 50%;
@@ -35,20 +64,27 @@
     transition: transform 120ms ease, box-shadow 200ms ease;
   }
 
-  .x-button:hover:not(:disabled) {
+  button:hover:not(:disabled) {
     transform: scale(1.06);
+  }
+
+  .x-button:hover:not(:disabled) {
     box-shadow: 0 0 24px rgb(255 60 60 / 0.6);
   }
 
-  .x-button:active:not(:disabled) {
+  .check-button:hover:not(:disabled) {
+    box-shadow: 0 0 24px rgb(60 220 130 / 0.6);
+  }
+
+  button:active:not(:disabled) {
     transform: scale(0.94);
   }
 
-  .x-button:disabled {
+  button:disabled {
     cursor: default;
   }
 
-  .x-button:disabled:not(.lit) {
+  button:disabled:not(.lit) {
     opacity: 0.45;
   }
 
@@ -56,6 +92,12 @@
     border-color: rgb(255 60 60);
     box-shadow: 0 0 32px rgb(255 30 30 / 0.85);
     animation: pop 380ms ease-out;
+  }
+
+  .check-button.lit {
+    border-color: rgb(70 230 140);
+    box-shadow: 0 0 32px rgb(40 220 110 / 0.85);
+    animation: bounce 600ms ease-out;
   }
 
   img {
@@ -68,6 +110,21 @@
   @keyframes pop {
     from {
       transform: scale(1.4);
+    }
+  }
+
+  @keyframes bounce {
+    0% {
+      transform: scale(0.5);
+    }
+    40% {
+      transform: scale(1.15);
+    }
+    70% {
+      transform: scale(0.96);
+    }
+    100% {
+      transform: scale(1);
     }
   }
 </style>

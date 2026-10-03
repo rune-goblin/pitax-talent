@@ -1,47 +1,67 @@
+<script lang="ts" module>
+  /** What the dossier is about: one character, or a faction whose candidates audition as a slate. */
+  export type Subject = { kind: 'npc'; id: string } | { kind: 'faction'; id: string };
+</script>
+
 <script lang="ts">
-  import { t } from '../i18n';
-  import { dossier, thumbPath } from '../roster';
+  import { t, tf } from '../i18n';
+  import { factions } from '../pitax/pitax';
+  import { candidatesOf, contestant, dossier, factionById, thumbPath, type Dossier } from '../roster';
+  import type { Clock } from '../state';
+  import ProgressClock from './ProgressClock.svelte';
 
   interface Props {
-    id: string | null;
-    stagedId: string | null;
-    onstage: (id: string) => void;
+    subject: Subject | null;
+    stagedIds: string[];
+    clocks: Record<string, Clock>;
+    onshow: (id: string) => void;
+    onstage: (ids: string[]) => void;
     onbrowse: () => void;
+    onclock: (id: string, clock: Clock) => void;
   }
 
-  let { id, stagedId, onstage, onbrowse }: Props = $props();
+  let { subject, stagedIds, clocks, onshow, onstage, onbrowse, onclock }: Props = $props();
 
-  let scroller = $state<HTMLElement>();
-  let nav = $state<HTMLElement>();
+  const clockOf = (d: Dossier): Clock | undefined =>
+    clocks[d.npc.id] ?? (d.agenda?.clock ? { size: d.agenda.clock, progress: d.agenda.progress ?? 0 } : undefined);
 
-  const d = $derived(dossier(id ?? ''));
-  const onStage = $derived(!!d && d.npc.id === stagedId);
+  const faction = $derived(subject?.kind === 'faction' ? factionById(subject.id) : undefined);
+  const entries = $derived.by((): Dossier[] => {
+    if (!subject) return [];
+    if (faction) return candidatesOf(faction).map((n) => dossier(n.id)).filter((d) => !!d);
+    const d = dossier(subject.id);
+    return d ? [d] : [];
+  });
+  const lead = $derived(entries[0]);
+  const shownFaction = $derived(faction ?? lead?.faction);
+  const slateIds = $derived(entries.map((d) => d.npc.id));
+  const onStage = $derived(slateIds.length > 0 && slateIds.every((id) => stagedIds.includes(id)));
+  const others = $derived(stagedIds.filter((id) => !slateIds.includes(id)).map(contestant).filter((npc) => !!npc));
+
   const sections = $derived.by(() => {
-    if (!d) return [];
+    if (!lead) return [];
+    const has = (pick: (d: Dossier) => unknown) => entries.some(pick);
     const present: [string, unknown][] = [
-      ['faction', d.faction],
-      ['bio', d.bio || d.background],
-      ['case', d.case],
-      ['agenda', d.agenda],
-      ['consequences', d.consequences],
+      ['faction', shownFaction],
+      ['bio', has((d) => d.bio || d.background)],
+      ['case', has((d) => d.case)],
+      ['goal', has((d) => d.agenda?.goal)],
+      ['position', has((d) => d.agenda)],
+      ['consequences', has((d) => d.consequences)],
     ];
-    return present.filter(([, has]) => has).map(([key]) => key);
+    return present.filter(([, ok]) => ok).map(([key]) => key);
   });
 
+  // The GM's choice of page survives switching subjects, so comparing the factions' cases is one click each.
+  let chosen = $state('case');
+  const section = $derived(sections.includes(chosen) ? chosen : sections[0]);
+
+  let body = $state<HTMLElement>();
   $effect(() => {
-    void id;
-    if (scroller) scroller.scrollTop = 0;
+    void subject;
+    void section;
+    if (body) body.scrollTop = 0;
   });
-
-  function jump(key: string) {
-    const target = scroller?.querySelector<HTMLElement>(`[data-section="${key}"]`);
-    if (!scroller || !target) return;
-    scroller.scrollTo({ top: target.offsetTop - (nav?.offsetHeight ?? 0) - 4, behavior: 'smooth' });
-  }
-
-  function stageShown() {
-    if (d) onstage(d.npc.id);
-  }
 </script>
 
 {#snippet list(label: string, items: string[] | undefined, secret = false)}
@@ -55,159 +75,198 @@
   {/if}
 {/snippet}
 
-<article class="dossier" bind:this={scroller}>
-  {#if !d}
+{#snippet byName(d: Dossier)}
+  {#if entries.length > 1}
+    <h3>
+      <button type="button" class="person" onclick={() => onshow(d.npc.id)}>{d.npc.name}</button>
+    </h3>
+  {/if}
+{/snippet}
+
+<article class="dossier">
+  {#if !lead}
     <div class="empty">
       <p>{t('dossier.empty')}</p>
       <button type="button" class="action" onclick={onbrowse}>
         <i class="fa-solid fa-users"></i>
-        {t('director.tabs.cast')}
+        {t('director.tabs.council')}
       </button>
     </div>
   {:else}
     <header>
-      <img src={thumbPath(d.npc)} alt="" />
+      <span class="faces">
+        {#each entries as d (d.npc.id)}
+          <img src={thumbPath(d.npc)} alt="" />
+        {/each}
+      </span>
       <div class="identity">
         <span class="status" class:live={onStage}>{onStage ? t('dossier.onStage') : t('dossier.preview')}</span>
-        <h2>{d.npc.name}</h2>
-        <p class="role">{d.npc.role}</p>
-        {#if d.npc.stats}<p class="stats">{d.npc.stats}</p>{/if}
-        {#if d.npc.fate}<p class="fate">{d.npc.fate}</p>{/if}
+        {#if faction}
+          <h2>{faction.name}</h2>
+          <p class="role">{faction.type} · {tf('director.rank', { rank: String(factions.indexOf(faction) + 1), of: String(factions.length) })}</p>
+          <p class="stats">
+            {t('dossier.candidates')}:
+            {#each entries as d, i (d.npc.id)}
+              {#if i}·{/if}
+              <button type="button" class="person" onclick={() => onshow(d.npc.id)}>{d.npc.name}</button>
+            {/each}
+          </p>
+        {:else}
+          <h2>{lead.npc.name}</h2>
+          <p class="role">{lead.npc.role}</p>
+          {#if lead.npc.stats}<p class="stats">{lead.npc.stats}</p>{/if}
+          {#if lead.npc.fate}<p class="fate">{lead.npc.fate}</p>{/if}
+        {/if}
         {#if !onStage}
-          <button type="button" class="action" onclick={stageShown}>
+          <button type="button" class="action" onclick={() => onstage(slateIds)}>
             <i class="fa-solid fa-person-walking"></i>
             {t('director.bringOn')}
           </button>
+        {:else if others.length}
+          <span class="others">
+            {t('dossier.alsoOnStage')}
+            {#each others as npc (npc.id)}
+              <button type="button" class="chip" onclick={() => onshow(npc.id)}>{npc.name}</button>
+            {/each}
+          </span>
         {/if}
       </div>
     </header>
 
-    <nav bind:this={nav}>
+    <div class="pages" role="tablist">
       {#each sections as key (key)}
-        <button type="button" onclick={() => jump(key)}>{t(`dossier.${key}`)}</button>
+        <button type="button" role="tab" class:current={key === section} aria-selected={key === section} onclick={() => (chosen = key)}>
+          {t(`dossier.${key}`)}
+        </button>
       {/each}
-    </nav>
+    </div>
 
-    {#if d.faction}
-      <section data-section="faction">
-        <h3>{d.faction.name}</h3>
-        <p class="meta">{d.faction.type} · {d.faction.colors} · {d.faction.symbol} · {d.faction.clothing}</p>
-        <p>{d.faction.summary}</p>
-      </section>
-    {/if}
-
-    {#if d.bio || d.background}
-      <section data-section="bio">
-        <h3>{t('dossier.bio')}</h3>
-        {#if d.bio}<p>{d.bio}</p>{/if}
-        {#if d.background}<p>{d.background}</p>{/if}
-      </section>
-    {/if}
-
-    {#if d.case}
-      <section data-section="case">
-        <h3>{t('dossier.case')}</h3>
-        <blockquote>{d.case.pitch}</blockquote>
-        <div class="lists">
-          {@render list(t('dossier.offers'), d.case.offers)}
-          {@render list(t('dossier.asks'), d.case.asks)}
-          {@render list(t('dossier.hides'), d.case.hides, true)}
-          {@render list(t('dossier.probes'), d.case.probes)}
-        </div>
-      </section>
-    {/if}
-
-    {#if d.agenda}
-      <section data-section="agenda">
-        <h3>{t('dossier.agenda')}</h3>
-        {#if d.agenda.goal}
-          <p class="goal">
-            <strong>{d.agenda.goal}</strong>
-            {#if d.agenda.clock}
-              <span class="clock" role="img" aria-label="{d.agenda.progress ?? 0}/{d.agenda.clock}">
-                {#each { length: d.agenda.clock }, i (i)}<i class:filled={i < (d.agenda.progress ?? 0)}></i>{/each}
-              </span>
-            {/if}
-          </p>
-        {/if}
-        <div class="lists">
-          {@render list(t('dossier.allies'), d.agenda.allies)}
-          {@render list(t('dossier.enemies'), d.agenda.enemies)}
-          {@render list(t('dossier.assets'), d.agenda.assets)}
-          {@render list(t('dossier.vulnerabilities'), d.agenda.vulnerabilities, true)}
-        </div>
-      </section>
-    {/if}
-
-    {#if d.consequences}
-      <section data-section="consequences">
-        <h3>{t('dossier.consequences')}</h3>
-        <p><em>{d.consequences.motive}</em></p>
-        <div class="lists">
-          {@render list(t('dossier.seated'), d.consequences.seated)}
-          {@render list(t('dossier.refused'), d.consequences.refused)}
-        </div>
-        {@render list(t('dossier.conflicts'), d.consequences.conflicts)}
-      </section>
-    {/if}
+    <div class="body" bind:this={body}>
+      {#if section === 'faction' && shownFaction}
+        <h3>{shownFaction.name}</h3>
+        <p class="meta">{shownFaction.type} · {shownFaction.colors} · {shownFaction.symbol} · {shownFaction.clothing}</p>
+        <p>{shownFaction.summary}</p>
+      {:else if section === 'bio'}
+        {#each entries as d (d.npc.id)}
+          {@render byName(d)}
+          {#if d.bio}<p>{d.bio}</p>{/if}
+          {#if d.background}<p>{d.background}</p>{/if}
+        {/each}
+      {:else if section === 'case'}
+        {#each entries as d (d.npc.id)}
+          {#if d.case}
+            {@render byName(d)}
+            <blockquote>{d.case.pitch}</blockquote>
+            <div class="lists">
+              {@render list(t('dossier.offers'), d.case.offers)}
+              {@render list(t('dossier.asks'), d.case.asks)}
+              {@render list(t('dossier.hides'), d.case.hides, true)}
+              {@render list(t('dossier.probes'), d.case.probes)}
+            </div>
+          {/if}
+        {/each}
+      {:else if section === 'goal'}
+        {#each entries as d (d.npc.id)}
+          {#if d.agenda?.goal}
+            {@const clock = clockOf(d)}
+            {@render byName(d)}
+            <div class="goal">
+              <p class="objective">{d.agenda.goal}</p>
+              {#if clock}<ProgressClock {clock} onchange={(next) => onclock(d.npc.id, next)} />{/if}
+            </div>
+          {/if}
+        {/each}
+      {:else if section === 'position'}
+        {#each entries as d (d.npc.id)}
+          {#if d.agenda}
+            {@render byName(d)}
+            <div class="lists">
+              {@render list(t('dossier.allies'), d.agenda.allies)}
+              {@render list(t('dossier.enemies'), d.agenda.enemies)}
+              {@render list(t('dossier.assets'), d.agenda.assets)}
+              {@render list(t('dossier.vulnerabilities'), d.agenda.vulnerabilities, true)}
+            </div>
+          {/if}
+        {/each}
+      {:else if section === 'consequences'}
+        {#each entries as d (d.npc.id)}
+          {#if d.consequences}
+            {@render byName(d)}
+            <p><em>{d.consequences.motive}</em></p>
+            <div class="lists">
+              {@render list(t('dossier.seated'), d.consequences.seated)}
+              {@render list(t('dossier.refused'), d.consequences.refused)}
+            </div>
+            {@render list(t('dossier.conflicts'), d.consequences.conflicts)}
+          {/if}
+        {/each}
+      {/if}
+    </div>
   {/if}
 </article>
 
 <style>
   .dossier {
-    /* Section jumps measure offsetTop against this box. */
-    position: relative;
+    display: flex;
     flex: 1;
+    flex-direction: column;
     min-height: 0;
-    overflow-y: auto;
-    padding: 0 16px 20px;
-    container-type: inline-size;
-    font-size: 14px;
-    line-height: 1.5;
+    font-family: var(--pt-body);
   }
 
   .empty {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
-    padding-top: 20px;
+    gap: 14px;
+    padding: 20px 16px;
     color: var(--pt-muted);
     font-style: italic;
   }
 
   header {
     display: flex;
+    flex: none;
     align-items: flex-end;
-    gap: 16px;
-    padding: 14px 0 12px;
+    gap: 18px;
+    padding: 14px 16px 12px;
   }
 
-  header img {
+  .faces {
+    display: flex;
     flex: none;
-    height: 168px;
+    align-items: flex-end;
+  }
+
+  .faces img {
+    height: 150px;
     border: none;
     object-fit: contain;
     filter: drop-shadow(0 8px 10px rgb(0 0 0 / 0.65));
+  }
+
+  .faces img + img {
+    margin-left: -40px;
+    transform: scale(0.9);
+    transform-origin: bottom;
   }
 
   .identity {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 3px;
+    gap: 2px;
     min-width: 0;
   }
 
   .status {
-    padding: 2px 8px 1px;
+    padding: 1px 9px;
     border: 1px solid var(--pt-gilt-dim);
-    border-radius: 2px;
+    border-radius: 3px;
     color: var(--pt-gilt);
-    font-size: 10px;
+    font-family: var(--font-sans);
+    font-size: 13px;
     font-weight: 600;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
   }
 
   .status.live {
@@ -221,59 +280,82 @@
     border: none;
     color: var(--pt-paper);
     font-family: var(--pt-display);
-    font-size: 40px;
-    line-height: 0.95;
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1.1;
   }
 
   p {
-    margin: 0 0 0.5em;
+    margin: 0 0 0.6em;
   }
 
   .role {
     margin: 0;
-    font-family: var(--pt-serif);
     font-size: 17px;
     font-style: italic;
-    line-height: 1.25;
+    line-height: 1.3;
   }
 
   .stats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 6px;
     margin: 0;
     color: var(--pt-muted);
-    font-size: 12.5px;
+    font-family: var(--font-sans);
+    font-size: 14px;
   }
 
   .fate {
     margin: 0;
     color: var(--pt-ruby-soft);
-    font-size: 11px;
+    font-family: var(--font-sans);
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+  }
+
+  .person {
+    display: inline;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline dotted var(--pt-gilt-dim);
+    text-underline-offset: 3px;
+    transition: color 140ms ease;
+  }
+
+  .person:hover {
+    color: var(--pt-gilt);
   }
 
   .action {
     flex: none;
     gap: 8px;
     width: auto;
-    height: 34px;
+    height: 36px;
     margin-top: 8px;
-    padding: 2px 16px 0;
+    padding: 0 16px;
     border: 1px solid var(--pt-gilt);
-    border-radius: 3px;
+    border-radius: 4px;
     background: linear-gradient(180deg, #8a1730, #5a0f20);
     box-shadow: 0 3px 10px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.18);
     color: #fff3d6;
     font-family: var(--pt-display);
-    font-size: 19px;
+    font-size: 17px;
     font-style: normal;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-weight: 600;
     transition: filter 140ms ease, transform 140ms ease;
   }
 
   .action i {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .action:hover {
@@ -281,58 +363,99 @@
     transform: translateY(-1px);
   }
 
-  nav {
-    position: sticky;
-    top: 0;
-    z-index: 1;
+  .others {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
-    margin: 0 -16px;
-    padding: 7px 16px;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    color: var(--pt-muted);
+    font-family: var(--font-sans);
+    font-size: 14px;
+  }
+
+  .chip {
+    flex: none;
+    width: auto;
+    height: 26px;
+    min-height: 0;
+    padding: 0 10px;
+    border: 1px solid var(--pt-gilt-dim);
+    border-radius: 13px;
+    background: none;
+    box-shadow: none;
+    color: var(--pt-gilt);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    transition: background 140ms ease, color 140ms ease;
+  }
+
+  .chip:hover {
+    background: var(--pt-gilt);
+    color: var(--pt-ink);
+  }
+
+  .pages {
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 16px;
     border-block: 1px solid var(--pt-ink-line);
     background: var(--pt-ink-raised);
   }
 
-  nav button {
+  .pages button {
     flex: none;
     width: auto;
-    height: 22px;
+    height: 28px;
     min-height: 0;
-    padding: 0 9px;
+    padding: 0 12px;
     border: 1px solid transparent;
-    border-radius: 11px;
+    border-radius: 14px;
     background: none;
     box-shadow: none;
     color: var(--pt-muted);
-    font-size: 11px;
+    font-family: var(--font-sans);
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    transition: color 140ms ease, border-color 140ms ease;
+    transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
   }
 
-  nav button:hover {
+  .pages button:hover {
     border-color: var(--pt-gilt-dim);
     color: var(--pt-gilt);
   }
 
-  section {
-    padding-top: 16px;
+  .pages button.current {
+    border-color: var(--pt-gilt);
+    background: rgb(220 180 99 / 0.12);
+    color: var(--pt-gilt);
+  }
+
+  .body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 14px 16px 20px;
+    container-type: inline-size;
   }
 
   h3 {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     margin: 0 0 6px;
     border: none;
     color: var(--pt-gilt);
     font-family: var(--pt-display);
-    font-size: 24px;
-    letter-spacing: 0.05em;
-    line-height: 1;
-    text-transform: uppercase;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .body > h3:not(:first-child) {
+    margin-top: 18px;
   }
 
   h3::after {
@@ -342,42 +465,44 @@
     content: '';
   }
 
+  h3 .person {
+    text-decoration: none;
+  }
+
   .meta {
     color: var(--pt-muted);
-    font-size: 12.5px;
+    font-family: var(--font-sans);
+    font-size: 14px;
   }
 
   blockquote {
-    margin: 2px 0 10px;
-    padding: 2px 0 2px 14px;
+    margin: 2px 0 14px;
+    padding: 2px 0 2px 16px;
     border-left: 2px solid var(--pt-gilt);
     color: #fff3d6;
-    font-family: var(--pt-serif);
     font-size: 19px;
     font-style: italic;
-    line-height: 1.3;
+    line-height: 1.4;
   }
 
   .lists {
     display: grid;
-    gap: 10px 20px;
-    margin-bottom: 10px;
+    gap: 12px 24px;
+    margin-bottom: 12px;
   }
 
-  @container (min-width: 460px) {
+  @container (min-width: 540px) {
     .lists {
       grid-template-columns: 1fr 1fr;
     }
   }
 
   h4 {
-    margin: 0 0 2px;
+    margin: 0 0 3px;
     color: var(--pt-gilt);
     font-family: var(--font-sans);
-    font-size: 10.5px;
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
   }
 
   .secret h4 {
@@ -393,16 +518,16 @@
   li {
     position: relative;
     margin: 0;
-    padding: 2px 0 2px 14px;
-    line-height: 1.35;
+    padding: 2px 0 2px 16px;
+    line-height: 1.4;
   }
 
   li::before {
     position: absolute;
-    top: 0.62em;
+    top: 0.7em;
     left: 2px;
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
     background: var(--pt-gilt-dim);
     content: '';
     rotate: 45deg;
@@ -414,25 +539,21 @@
 
   .goal {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     align-items: center;
-    gap: 6px 12px;
+    gap: 20px;
+    padding: 10px 0 24px;
   }
 
-  .clock {
-    display: inline-flex;
-    gap: 3px;
-  }
-
-  .clock i {
-    width: 9px;
-    height: 9px;
-    border: 1px solid var(--pt-gilt-dim);
-    rotate: 45deg;
-  }
-
-  .clock i.filled {
-    border-color: var(--pt-gilt);
-    background: var(--pt-gilt);
+  .objective {
+    max-width: 30ch;
+    margin: 0;
+    color: #fff3d6;
+    font-family: var(--pt-display);
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+    text-wrap: balance;
   }
 </style>

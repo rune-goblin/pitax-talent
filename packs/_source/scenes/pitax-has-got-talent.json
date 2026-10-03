@@ -4,10 +4,10 @@
   "name": "Pitax Has Got Talent",
   "navigation": true,
   "navName": "",
-  "folder": "ptTalentScnFldr",
+  "folder": "ptTalentScnFldr0",
   "thumb": "modules/pitax-talent/assets/talent/stage-thumb.webp",
-  "width": 1544,
-  "height": 1019,
+  "width": 2880,
+  "height": 2880,
   "padding": 0,
   "shiftX": 0,
   "shiftY": 0,
@@ -17,7 +17,7 @@
     "scale": null
   },
   "background": {
-    "src": "modules/pitax-talent/assets/talent/pitax-stage-tall.webp",
+    "src": "modules/pitax-talent/assets/talent/pitax-gotit.webp",
     "anchorX": 0,
     "anchorY": 0,
     "fit": "fill",
@@ -37,7 +37,7 @@
       },
       "background": {
         "color": "#0b0612",
-        "src": "modules/pitax-talent/assets/talent/pitax-stage-tall.webp",
+        "src": "modules/pitax-talent/assets/talent/pitax-gotit.webp",
         "tint": "#ffffff",
         "alphaThreshold": 0.75
       },

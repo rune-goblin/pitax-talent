@@ -1,11 +1,17 @@
 /** Pixel positions on the stage image; the stage layer scales them to the scene's actual size. */
-export const STAGE = { width: 1544, height: 1019 } as const;
+export const STAGE = { width: 2880, height: 2880 } as const;
 
 export const LAYOUT = {
-  xRow: { y: 288, size: 66, gap: 84 },
-  back: { feet: 642, height: 235 },
-  front: { feet: 882, height: 550 },
-  centerX: 772,
+  xRow: { y: 630, size: 190, gap: 270, nameY: 736, nameSize: 60 },
+  back: { feet: 1920, height: 720 },
+  front: { feet: 2544, height: 1500 },
+  centerX: 1440,
+  /** Each contestant's name sits just below their feet, sized for the front of the stage. */
+  figureName: { below: 28, size: 72 },
+  /** Valerie's token fills the archway while she breaks a tie; her vote badges its lower right. */
+  regent: { y: 1330, size: 440, captionY: 1590, markSize: 170 },
+  /** The verdict hangs over the floor's emblem, wrapped to the width of the stage disc. */
+  verdict: { y: 2150, size: 120, width: 2000 },
 } as const;
 
 export interface Pose {
@@ -36,5 +42,20 @@ export function walkPose(p: number): Pose {
   };
 }
 
+// The walk-on lerps feet and height together, so every pose lies on one perspective line.
+const FEET_PER_HEIGHT = (LAYOUT.front.feet - LAYOUT.back.feet) / (LAYOUT.front.height - LAYOUT.back.height);
+
+/** The pose shrunk to `scale`, its feet drawn back up the stage so the shrink reads as distance. */
+export function stepBack(pose: Pose, scale: number): Pose {
+  const height = pose.height * scale;
+  return { ...pose, height, feet: pose.feet - (pose.height - height) * FEET_PER_HEIGHT };
+}
+
 export const xCenters = (count: number): number[] =>
   Array.from({ length: count }, (_, i) => LAYOUT.centerX + (i - (count - 1) / 2) * LAYOUT.xRow.gap);
+
+const SPREAD = 0.6;
+
+/** Horizontal offsets from centre stage for a slate of `count` figures, spaced by their height so they close up at the back. */
+export const figureOffsets = (count: number, height: number): number[] =>
+  Array.from({ length: count }, (_, i) => (i - (count - 1) / 2) * height * SPREAD);

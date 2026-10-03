@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LAYOUT, walkPose, xCenters } from './pose';
+import { figureOffsets, LAYOUT, stepBack, walkPose, xCenters } from './pose';
 
 describe('walkPose', () => {
   it('starts dim and invisible in the archway', () => {
@@ -24,10 +24,38 @@ describe('walkPose', () => {
   });
 });
 
+describe('stepBack', () => {
+  it('draws the feet up the stage as far along the walk-on line as the height shrank', () => {
+    const back = stepBack(walkPose(1), 0.75);
+    const feetAlong = (back.feet - LAYOUT.back.feet) / (LAYOUT.front.feet - LAYOUT.back.feet);
+    const heightAlong = (back.height - LAYOUT.back.height) / (LAYOUT.front.height - LAYOUT.back.height);
+    expect(back.height).toBeCloseTo(LAYOUT.front.height * 0.75);
+    expect(back.feet).toBeLessThan(LAYOUT.front.feet);
+    expect(feetAlong).toBeCloseTo(heightAlong);
+  });
+
+  it('leaves a figure at full scale where it stands', () => {
+    expect(stepBack(walkPose(1), 1)).toEqual(walkPose(1));
+  });
+});
+
 describe('xCenters', () => {
   it('centres the row on the stage', () => {
     const xs = xCenters(4);
     expect((xs[0] + xs[3]) / 2).toBeCloseTo(LAYOUT.centerX);
     expect(xs[1] - xs[0]).toBeCloseTo(LAYOUT.xRow.gap);
+  });
+});
+
+describe('figureOffsets', () => {
+  it('keeps a lone figure at centre and spreads a pair evenly', () => {
+    expect(figureOffsets(1, 1500)).toEqual([0]);
+    const [a, b] = figureOffsets(2, 1500);
+    expect(a).toBeCloseTo(-b);
+    expect(b).toBeGreaterThan(0);
+  });
+
+  it('closes the pair up as the figures shrink', () => {
+    expect(figureOffsets(2, 720)[1]).toBeLessThan(figureOffsets(2, 1500)[1]);
   });
 });

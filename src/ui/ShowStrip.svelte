@@ -1,24 +1,39 @@
 <script lang="ts">
-  import { X_OFF, X_ON } from '../constants';
+  import { CHECK, X_OFF, X_ON } from '../constants';
   import { t, tf } from '../i18n';
-  import { contestant, thumbPath } from '../roster';
-  import { allVotesIn, assignSeat, castVote, clearStage, resetVotes, retractVote, type TalentState } from '../state';
+  import { contestant, REGENT_ID, thumbPath } from '../roster';
+  import { assignSeat, awaitingRegent, castVote, clearStage, resetVotes, retractVote, spotlight, verdict, type TalentState } from '../state';
   import { mutate } from '../sync';
   import { talent } from '../talentStore.svelte';
 
-  let { onshow }: { onshow: () => void } = $props();
+  let { onshow }: { onshow: (id: string) => void } = $props();
 
   const players = game.users.filter((u) => !u.isGM).map((u) => ({ id: u.id, name: u.name }));
 
   let seating = $state(talent.state.seats.every((id) => !id));
 
-  const onStage = $derived(contestant(talent.state.contestantId));
-  const out = $derived(allVotesIn(talent.state));
+  const onStage = $derived(talent.state.contestantIds.map(contestant).filter((npc) => !!npc));
+  const spotlightId = $derived(talent.state.spotlightId);
+  const decided = $derived(verdict(talent.state));
+  const out = $derived(decided === 'rejected');
+  const eyebrow = $derived(
+    decided
+      ? t(`director.${decided}`)
+      : awaitingRegent(talent.state)
+        ? tf('regent.decides', { name: contestant(REGENT_ID)?.name ?? REGENT_ID })
+        : t('director.onStage'),
+  );
   const judges = $derived(
     talent.state.seats.map((id, i) => players.find((p) => p.id === id)?.name ?? tf('director.judge', { n: String(i + 1) })),
   );
 
   const update = (fn: (state: TalentState) => TalentState) => talent.sceneId && mutate(talent.sceneId, fn);
+
+  // One contestant: open their dossier. A slate: the click also throws the spotlight on that one.
+  function pick(id: string) {
+    onshow(id);
+    if (onStage.length > 1) update((s) => spotlight(s, id));
+  }
 
   function seat(index: number, event: Event) {
     const userId = (event.currentTarget as HTMLSelectElement).value || null;
@@ -28,14 +43,26 @@
 
 <header class="strip" class:out class:seating>
   <div class="now">
-    {#if onStage}
-      <button type="button" class="who" aria-label={tf('director.showDossier', { name: onStage.name })} data-tooltip={tf('director.showDossier', { name: onStage.name })} onclick={onshow}>
-        <img src={thumbPath(onStage)} alt="" />
-        <span class="lines">
-          <span class="eyebrow">{out ? t('director.out') : t('director.onStage')}</span>
-          <span class="name">{onStage.name}</span>
+    {#if onStage.length}
+      <span class="lines">
+        <span class="eyebrow">{eyebrow}</span>
+        <span class="slate" class:many={onStage.length > 1}>
+          {#each onStage as npc (npc.id)}
+            <button
+              type="button"
+              class="who"
+              class:aside={!!spotlightId && spotlightId !== npc.id}
+              aria-pressed={spotlightId === npc.id}
+              aria-label={tf('director.showDossier', { name: npc.name })}
+              data-tooltip={tf('director.showDossier', { name: npc.name })}
+              onclick={() => pick(npc.id)}
+            >
+              <img src={thumbPath(npc)} alt="" />
+              <span class="name">{npc.name}</span>
+            </button>
+          {/each}
         </span>
-      </button>
+      </span>
       <button type="button" class="tool" aria-label={t('director.clear')} data-tooltip={t('director.clear')} onclick={() => update(clearStage)}>
         <i class="fa-solid fa-door-open"></i>
       </button>
@@ -49,28 +76,38 @@
 
   <div class="desk">
     {#each talent.state.seats as userId, i (i)}
-      {@const lit = talent.state.votes[i]}
-      <div class="seat" class:lit>
+      {@const vote = talent.state.votes[i]}
+      <div class="seat" class:lit={vote === 'x'} class:passed={vote === 'check'}>
         <div class="x">
           <button
             type="button"
             class="light"
-            disabled={lit || !onStage}
+            disabled={!!vote || !onStage.length}
             aria-label={tf('director.light', { judge: judges[i] })}
             data-tooltip={tf('director.light', { judge: judges[i] })}
-            onclick={() => update((s) => castVote(s, i))}
+            onclick={() => update((s) => castVote(s, i, 'x'))}
           >
-            <img src={lit ? X_ON : X_OFF} alt="" />
+            <img src={vote === 'check' ? CHECK : vote === 'x' ? X_ON : X_OFF} alt="" />
           </button>
-          {#if lit}
+          {#if vote}
             <button
               type="button"
-              class="undo"
+              class="badge undo"
               aria-label={tf('director.undo', { judge: judges[i] })}
               data-tooltip={tf('director.undo', { judge: judges[i] })}
               onclick={() => update((s) => retractVote(s, i))}
             >
               <i class="fa-solid fa-arrow-rotate-left"></i>
+            </button>
+          {:else if onStage.length}
+            <button
+              type="button"
+              class="badge approve"
+              aria-label={tf('director.approve', { judge: judges[i] })}
+              data-tooltip={tf('director.approve', { judge: judges[i] })}
+              onclick={() => update((s) => castVote(s, i, 'check'))}
+            >
+              <i class="fa-solid fa-check"></i>
             </button>
           {/if}
         </div>
@@ -162,6 +199,13 @@
     min-width: 0;
   }
 
+  .slate {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    min-width: 0;
+  }
+
   .who {
     flex: 0 1 auto;
     justify-content: flex-start;
@@ -175,16 +219,37 @@
     box-shadow: none;
     color: inherit;
     text-align: left;
+    transition: opacity 200ms ease;
+  }
+
+  /* A slate's names share the block, so each chip shrinks and its name may wrap. */
+  .many .who img {
+    width: 38px;
+    height: 50px;
+  }
+
+  .many .name {
+    font-size: 18px;
+    line-height: 1.1;
+    white-space: normal;
+  }
+
+  .who.aside {
+    opacity: 0.5;
   }
 
   .who img {
     flex: none;
-    width: 46px;
-    height: 60px;
+    width: 50px;
+    height: 66px;
     border: none;
     object-fit: contain;
     filter: drop-shadow(0 3px 5px rgb(0 0 0 / 0.6));
     transition: transform 160ms ease;
+  }
+
+  .who.aside img {
+    transform: scale(0.75);
   }
 
   .who:hover img {
@@ -201,10 +266,8 @@
   .eyebrow {
     color: var(--pt-gilt);
     font-family: var(--font-sans);
-    font-size: 10.5px;
+    font-size: 13px;
     font-weight: 600;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
   }
 
   .out .eyebrow {
@@ -215,8 +278,9 @@
     overflow: hidden;
     color: var(--pt-paper);
     font-family: var(--pt-display);
-    font-size: 27px;
-    line-height: 1;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.15;
     text-overflow: ellipsis;
     text-shadow: 0 2px 6px rgb(0 0 0 / 0.7);
     white-space: nowrap;
@@ -248,7 +312,7 @@
     flex-direction: column;
     align-items: center;
     gap: 3px;
-    width: 64px;
+    width: 72px;
   }
 
   .seating .seat {
@@ -259,8 +323,8 @@
 
   .x {
     position: relative;
-    width: 46px;
-    height: 46px;
+    width: 50px;
+    height: 50px;
   }
 
   .light {
@@ -305,7 +369,13 @@
     animation: stamp 320ms cubic-bezier(0.2, 1.4, 0.4, 1);
   }
 
-  .undo {
+  .passed .light:disabled img {
+    opacity: 1;
+    filter: drop-shadow(0 0 7px rgb(40 220 110 / 0.9));
+    animation: sprout 480ms cubic-bezier(0.3, 1.9, 0.5, 1);
+  }
+
+  .badge {
     position: absolute;
     top: -5px;
     right: -9px;
@@ -328,11 +398,22 @@
     color: var(--pt-ink);
   }
 
+  .approve {
+    border-color: var(--pt-emerald);
+    color: var(--pt-emerald);
+  }
+
+  .approve:hover {
+    background: var(--pt-emerald);
+    color: var(--pt-ink);
+  }
+
   .judge {
     overflow: hidden;
     max-width: 100%;
     color: var(--pt-paper);
-    font-size: 11.5px;
+    font-family: var(--font-sans);
+    font-size: 13px;
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -345,9 +426,9 @@
 
   .seat select {
     width: 100%;
-    height: 24px;
+    height: 26px;
     padding: 0 4px;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .tools {
@@ -390,6 +471,12 @@
     }
   }
 
+  @keyframes sprout {
+    from {
+      transform: scale(0);
+    }
+  }
+
   @keyframes flicker {
     50% {
       opacity: 0.35;
@@ -399,7 +486,8 @@
   @media (prefers-reduced-motion: reduce) {
     .strip.out::after,
     .lit .light:disabled img,
-    .undo {
+    .passed .light:disabled img,
+    .badge {
       animation: none;
     }
   }

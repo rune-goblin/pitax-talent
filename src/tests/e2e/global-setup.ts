@@ -18,12 +18,12 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     page.evaluate((id) => !!(window as any).game?.modules?.get(id)?.active, MODULE_ID);
 
   // The world the harness intended to launch (mirrors playwright.config's webServer env default).
-  const expectedWorld = process.env.TEST_WORLD ?? 'pf2e-test';
+  const expectedWorld = process.env.TEST_WORLD ?? 'km-test';
 
   try {
     await joinAsFirstGm(page);
 
-    // Guard against a stale/stray server being silently reused (reuseExistingServer): if :30005
+    // Guard against a stale/stray server being silently reused (reuseExistingServer): if the port
     // is some other Foundry or a different world, fail loud instead of testing the wrong target.
     const env = await page.evaluate(() => {
       const g = (window as any).game;
@@ -35,7 +35,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     if (env.world !== expectedWorld) {
       throw new Error(
         `Connected to world "${env.world}" but TEST_WORLD is "${expectedWorld}". A stray Foundry is being reused — ` +
-          `kill it (e.g. lsof -ti:30005 | xargs kill) and re-run, or set TEST_WORLD to match.`,
+          `kill it (e.g. lsof -ti:${new URL(baseURL).port} | xargs kill) and re-run, or set TEST_WORLD to match.`,
       );
     }
 

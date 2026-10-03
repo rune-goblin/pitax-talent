@@ -1,38 +1,72 @@
 <script lang="ts">
   import { t } from '../i18n';
-  import { rosterGroups } from '../roster';
-  import { bringOn } from '../state';
+  import { actKey, factionOnStage, rosterGroups } from '../roster';
+  import { bringOn, clearResults, setClock, type Clock } from '../state';
   import { mutate } from '../sync';
   import { talent } from '../talentStore.svelte';
-  import Cast from './Cast.svelte';
-  import Dossier from './Dossier.svelte';
+  import Cast, { type CastMember } from './Cast.svelte';
+  import Council from './Council.svelte';
+  import Dossier, { type Subject } from './Dossier.svelte';
+  import Problems from './Problems.svelte';
   import ShowStrip from './ShowStrip.svelte';
 
-  type Tab = 'dossier' | 'cast';
+  type Tab = 'dossier' | 'council' | 'cast' | 'problems';
 
-  const groups = rosterGroups(t('director.other'));
-  const castSize = groups.reduce((n, g) => n + g.members.length, 0);
+  const cast: CastMember[] = rosterGroups(t('director.other')).flatMap((g) =>
+    g.members.map((npc) => ({ npc, troupe: npc.faction ? g.name : t(`director.group.${npc.group}`) })),
+  );
+  const tabs: { id: Tab; label: string; count?: number }[] = [
+    { id: 'dossier', label: t('director.tabs.dossier') },
+    { id: 'council', label: t('director.tabs.council') },
+    { id: 'cast', label: t('director.tabs.cast'), count: cast.length },
+    { id: 'problems', label: t('director.tabs.problems') },
+  ];
 
-  let tab = $state<Tab>(talent.state.contestantId ? 'dossier' : 'cast');
-  let previewId = $state<string | null>(null);
+  let tab = $state<Tab>(talent.state.contestantIds.length ? 'dossier' : 'council');
+  // Derived apart from `preview` so only a real spotlight move resets it: every vote and clock
+  // tick replaces `talent.state` wholesale.
+  const spotlightId = $derived(talent.state.spotlightId);
+  // A preview lasts until the spotlight moves, so a pick on the stage canvas brings the dossier along.
+  let preview = $derived.by((): Subject | null => {
+    void spotlightId;
+    return null;
+  });
 
-  const stagedId = $derived(talent.state.contestantId);
-  const shownId = $derived(previewId ?? stagedId);
+  const stagedIds = $derived(talent.state.contestantIds);
+  // With nothing previewed the dossier follows the stage: the spotlit contestant, else the faction
+  // whose slate is out, else whoever stands first.
+  const shown = $derived.by((): Subject | null => {
+    if (preview) return preview;
+    if (spotlightId) return { kind: 'npc', id: spotlightId };
+    const faction = factionOnStage(stagedIds);
+    if (faction) return { kind: 'faction', id: faction.id };
+    return stagedIds[0] ? { kind: 'npc', id: stagedIds[0] } : null;
+  });
+  const shownId = $derived(shown?.kind === 'npc' ? shown.id : null);
+  const shownFactionId = $derived(shown?.kind === 'faction' ? shown.id : null);
 
-  function preview(id: string) {
-    previewId = id === stagedId ? null : id;
+  function show(subject: Subject) {
+    preview = subject;
     tab = 'dossier';
   }
 
-  function showStaged() {
-    previewId = null;
-    tab = 'dossier';
-  }
-
-  function stage(id: string) {
+  function stage(ids: string[]) {
     if (!talent.sceneId) return;
-    showStaged();
-    void mutate(talent.sceneId, (s) => bringOn(s, id));
+    preview = null;
+    tab = 'dossier';
+    void mutate(talent.sceneId, (s) => bringOn(s, ids, actKey(ids)));
+  }
+
+  function tick(id: string, clock: Clock) {
+    if (talent.sceneId) void mutate(talent.sceneId, (s) => setClock(s, id, clock));
+  }
+
+  async function clearVerdicts() {
+    const sure = await foundry.applications.api.DialogV2.confirm({
+      window: { title: t('council.clear') },
+      content: `<p>${t('council.clearConfirm')}</p>`,
+    });
+    if (sure === true && talent.sceneId) void mutate(talent.sceneId, clearResults);
   }
 </script>
 
@@ -40,23 +74,43 @@
   {#if !talent.sceneId}
     <p class="notice">{t('director.noStage')}</p>
   {:else}
-    <ShowStrip onshow={showStaged} />
+    <ShowStrip onshow={(id) => show({ kind: 'npc', id })} />
 
     <div class="tabs" role="tablist">
-      <button type="button" role="tab" class="tab" class:current={tab === 'dossier'} aria-selected={tab === 'dossier'} onclick={() => (tab = 'dossier')}>
-        {t('director.tabs.dossier')}
-      </button>
-      <button type="button" role="tab" class="tab" class:current={tab === 'cast'} aria-selected={tab === 'cast'} onclick={() => (tab = 'cast')}>
-        {t('director.tabs.cast')}
-        <small>{castSize}</small>
-      </button>
+      {#each tabs as { id, label, count } (id)}
+        <button type="button" role="tab" class="tab" class:current={tab === id} aria-selected={tab === id} onclick={() => (tab = id)}>
+          {label}
+          {#if count}<small>{count}</small>{/if}
+        </button>
+      {/each}
     </div>
 
-    <div class="panel" role="tabpanel" hidden={tab !== 'dossier'}>
-      <Dossier id={shownId} {stagedId} onstage={stage} onbrowse={() => (tab = 'cast')} />
+    <div class="panel" role="tabpanel" data-tab="dossier" hidden={tab !== 'dossier'}>
+      <Dossier
+        subject={shown}
+        {stagedIds}
+        clocks={talent.state.clocks}
+        onshow={(id) => show({ kind: 'npc', id })}
+        onstage={stage}
+        onbrowse={() => (tab = 'council')}
+        onclock={tick}
+      />
     </div>
-    <div class="panel" role="tabpanel" hidden={tab !== 'cast'}>
-      <Cast {groups} {stagedId} {shownId} onpreview={preview} onstage={stage} />
+    <div class="panel" role="tabpanel" data-tab="council" hidden={tab !== 'council'}>
+      <Council
+        {stagedIds}
+        {shownFactionId}
+        results={talent.state.results}
+        onpreview={(id) => show({ kind: 'faction', id })}
+        onstage={stage}
+        onclear={clearVerdicts}
+      />
+    </div>
+    <div class="panel" role="tabpanel" data-tab="cast" hidden={tab !== 'cast'}>
+      <Cast members={cast} {stagedIds} {shownId} onpreview={(id) => show({ kind: 'npc', id })} onstage={stage} />
+    </div>
+    <div class="panel" role="tabpanel" data-tab="problems" hidden={tab !== 'problems'}>
+      <Problems />
     </div>
   {/if}
 </div>
@@ -81,7 +135,7 @@
     display: flex;
     flex: none;
     gap: 4px;
-    padding: 0 14px;
+    padding: 0 16px;
     border-bottom: 1px solid var(--pt-ink-line);
     background: var(--pt-ink-raised);
   }
@@ -90,9 +144,9 @@
     flex: none;
     gap: 8px;
     width: auto;
-    height: 40px;
+    height: 44px;
     margin-bottom: -1px;
-    padding: 4px 14px 0;
+    padding: 2px 14px 0;
     border: none;
     border-bottom: 2px solid transparent;
     border-radius: 0;
@@ -100,9 +154,8 @@
     box-shadow: none;
     color: var(--pt-muted);
     font-family: var(--pt-display);
-    font-size: 21px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 19px;
+    font-weight: 600;
     transition: color 150ms ease, border-color 150ms ease;
   }
 
@@ -116,12 +169,12 @@
   }
 
   .tab small {
-    padding: 1px 6px;
+    padding: 1px 7px;
     border: 1px solid currentcolor;
-    border-radius: 9px;
+    border-radius: 10px;
     font-family: var(--font-sans);
-    font-size: 11px;
-    letter-spacing: 0;
+    font-size: 12px;
+    font-weight: 400;
     opacity: 0.7;
   }
 

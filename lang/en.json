@@ -1,34 +1,50 @@
 {
   "pitax-talent": {
-    "vote": "Vote X",
-    "noGM": "No GM is connected to count your X.",
+    "vote": {
+      "x": "Vote X",
+      "check": "Vote check"
+    },
+    "noGM": "No GM is connected to count your vote.",
+    "verdict": {
+      "appointed": "{name} appointed to the council",
+      "rejected": "{name} rejected"
+    },
+    "regent": {
+      "decides": "{name} decides",
+      "flavor": "{name} breaks the tie on {act}. Over 10 appoints."
+    },
     "poster": "Pitax Has Got Talent",
     "director": {
       "title": "Talent Director",
       "noStage": "View the Pitax Has Got Talent scene to direct the show.",
       "tabs": {
         "dossier": "Dossier",
-        "cast": "Cast"
+        "council": "Council",
+        "cast": "Cast",
+        "problems": "Problems"
       },
       "seats": "Assign judges",
       "judge": "Judge {n}",
       "empty": "— empty —",
       "onStage": "On stage",
-      "out": "Buzzed off",
+      "appointed": "Appointed",
+      "rejected": "Rejected",
       "stageEmpty": "The stage is empty",
       "showDossier": "Show {name}'s dossier",
       "light": "Light {judge}'s X",
-      "undo": "Take back {judge}'s X",
+      "approve": "Light {judge}'s check",
+      "undo": "Take back {judge}'s vote",
       "bringOn": "Bring On",
       "bringOnNamed": "Bring on {name}",
       "clear": "Clear Stage",
-      "reset": "Reset X's",
+      "reset": "Reset votes",
       "group": {
         "council": "Council",
         "court": "Irovetti's court",
         "city": "City"
       },
-      "other": "Other"
+      "other": "Other",
+      "rank": "Rank {rank} of {of}"
     },
     "dossier": {
       "empty": "Pick a character from the cast.",
@@ -41,7 +57,8 @@
       "asks": "Asks",
       "hides": "Hides",
       "probes": "Probes",
-      "agenda": "Agenda",
+      "goal": "Goal",
+      "position": "Position",
       "allies": "Allies",
       "enemies": "Enemies",
       "assets": "Assets",
@@ -49,13 +66,39 @@
       "consequences": "Consequences",
       "seated": "If seated",
       "refused": "If refused",
-      "conflicts": "Conflicts"
+      "conflicts": "Conflicts",
+      "alsoOnStage": "Also on stage",
+      "candidates": "Candidates",
+      "clock": "{progress} of {size}",
+      "clockLabel": "Progress clock",
+      "clockOf": "of {size}",
+      "clockForward": "Advance the clock",
+      "clockBack": "Roll the clock back",
+      "segments": "{n} segments",
+      "fewerSegments": "Remove a segment",
+      "moreSegments": "Add a segment"
     },
     "settings": {
       "buzzer": {
         "name": "Buzzer sound",
         "hint": "Plays for everyone when a judge's X lights."
+      },
+      "chime": {
+        "name": "Check chime",
+        "hint": "Plays for everyone when a judge gives a check."
       }
+    },
+    "council": {
+      "appointed": "{n} appointed",
+      "rejected": "{n} rejected",
+      "unheard": "{n} still to hear",
+      "score": "{yes}–{no}",
+      "clear": "Clear verdicts",
+      "clearConfirm": "Wipe every appointment and rejection? Each act returns to unheard."
+    },
+    "problems": {
+      "title": "Council problems",
+      "intro": "What the new council inherits, whoever sits on it."
     }
   }
 }

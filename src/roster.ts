@@ -53,3 +53,35 @@ export function dossier(id: string): Dossier | undefined {
 }
 
 export const contestant = (id: string | null) => (id ? npcById.get(id) : undefined);
+
+/** A council candidate is anyone with a case to make for a seat. */
+export const isCandidate = (npc: Npc): boolean => npc.id in cases;
+
+const leads = (npc: Npc) => /^(head|high priest|ringleader|founder)/i.test(npc.role);
+
+/** The faction's slate: its candidates with portraits, who audition together with the leader first. */
+export function candidatesOf(faction: Faction): Npc[] {
+  const slate = npcs.filter((n) => n.faction === faction.id && hasPortrait(n) && isCandidate(n));
+  return [...slate.filter(leads), ...slate.filter((n) => !leads(n))];
+}
+
+/** The faction whose whole slate is exactly these contestants, if any. */
+export function factionOnStage(ids: string[]): Faction | undefined {
+  if (!ids.length) return undefined;
+  return factions.find((f) => {
+    const slate = candidatesOf(f).map((n) => n.id);
+    return slate.length === ids.length && slate.every((id) => ids.includes(id));
+  });
+}
+
+/** What an act's verdict is saved under: the faction when its whole slate is on stage, else the contestants. */
+export const actKey = (ids: string[]): string => factionOnStage(ids)?.id ?? ids.join('+');
+
+export const factionById = (id: string): Faction | undefined => factions.find((f) => f.id === id);
+
+/** What the verdict calls the act: its faction for a whole slate, else the contestants by name. */
+export const actName = (ids: string[]): string =>
+  factionOnStage(ids)?.name ?? ids.map((id) => contestant(id)?.name ?? id).join(' & ');
+
+/** The regent who casts the deciding vote on a tie. */
+export const REGENT_ID = 'valerie';

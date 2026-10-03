@@ -5,7 +5,7 @@
   "type": "script",
   "img": "modules/pitax-talent/assets/talent/poster.webp",
   "scope": "global",
-  "folder": "ptTalentMacFldr",
+  "folder": "ptTalentMacFldr0",
   "command": "game.modules.get('pitax-talent')?.api?.showPoster();",
   "ownership": {
     "default": 0

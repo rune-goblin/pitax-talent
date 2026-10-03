@@ -70,6 +70,11 @@ export function buildAdventure(opts: { dry?: boolean } = {}): boolean {
       if (!collection || !Array.isArray(adventure[collection])) {
         throw new Error(`${dir}: cannot route doc with _key ${JSON.stringify(_key)} into an Adventure`);
       }
+      // The importer honours keepId only for valid 16-character ids; anything else gets a fresh id
+      // and every reference to it (a scene's folder, a token's actor) silently dangles.
+      if (!/^[A-Za-z0-9]{16}$/.test(String(doc._id))) {
+        throw new Error(`${dir}: _id ${JSON.stringify(doc._id)} must be exactly 16 alphanumeric characters`);
+      }
       (adventure[collection] as Doc[]).push(doc);
       counts[collection] = (counts[collection] ?? 0) + 1;
     }

@@ -7,9 +7,10 @@ A Foundry VTT v14 module for the Pitax council arc of *Kingmaker*. The faction r
 1. Import the **Pitax Has Got Talent** Adventure. It adds the stage scene and two macros.
 2. View the stage scene. The **Talent Director** opens for the GM.
 3. Assign a player to each of the four judge seats under the X's. The chair button folds the seat pickers away.
-4. Open the **Cast** tab and click a character. The **Dossier** tab shows their notes and a **Bring On** button. The walking-figure button on a cast card brings that character on directly. The portrait walks forward from the central archway.
+4. The **Council** tab lists the nine factions, each as one candidate ranked by influence. Bringing a faction on sends its whole slate out together (the Cattaneis and the Academy field two people each). Clicking a faction opens its dossier: the faction page, then each candidate's biography, council case, goal, position and consequences, one page per section. The goal page draws the candidate's progress clock as a pie: click a segment to fill up to it, or click the last filled segment to empty it. The **Cast** tab holds every character with a portrait for solo acts, and **Problems** lists what the council inherits.
+   With a slate on stage, clicking a name in the strip at the top throws the spotlight on that contestant: the others shrink and dim until you click again.
 5. Each seated player has an X button above the hotbar. Pressing it lights that judge's X on the stage for everyone and plays the buzzer. The GM lights any X by clicking it in the Director, and the undo arrow on a lit X takes it back. An X stays lit until the GM takes it back, brings on the next contestant or presses **Reset X's**.
-6. Four X's end the act: the stage dims and the contestant retreats into the archway.
+6. The fourth vote ends the act. The contestants retreat into the archway and a banner names the verdict: a majority of checks appoints the act to the council, and a majority of X's rejects it and dims the stage. On a two-two split Valerie breaks the tie. Her token appears, the GM's client rolls a d20 in chat, and over 10 appoints. With Dice So Nice, her vote lands once the dice settle.
 
 The **Show Talent Poster** macro opens the poster for everyone in Foundry's image window, which each viewer closes on their own.
 

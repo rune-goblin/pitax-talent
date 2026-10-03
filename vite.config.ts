@@ -12,7 +12,33 @@ export default defineConfig({
   root: 'src/',
   base: `/modules/${id}/dist/`,
   // root is src/, so point the plugin at the repo-root config (shared with svelte-check).
-  plugins: [svelte({ configFile: fileURLToPath(new URL('./svelte.config.ts', import.meta.url)) })],
+  plugins: [
+    svelte({ configFile: fileURLToPath(new URL('./svelte.config.ts', import.meta.url)) }),
+    {
+      // module.json links the built stylesheet, which doesn't exist in dev: Vite injects the
+      // styles itself, so answer Foundry's request with an empty sheet instead of a 404.
+      name: 'empty-dev-stylesheet',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url?.split('?')[0] !== `/modules/${id}/dist/${id}.css`) return next();
+          res.setHeader('Content-Type', 'text/css');
+          res.end('');
+        });
+      },
+    },
+    {
+      // The built entry doesn't exist in dev: serve Foundry's request for it as src/index.ts
+      // (base maps /modules/<id>/dist/ → src/), with HMR. Rewriting in place keeps this working
+      // when another dev server holds 30001 and Vite moves to the next free port.
+      name: 'dev-entry',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url?.split('?')[0] === `/modules/${id}/dist/${id}.js`) req.url = `/modules/${id}/dist/index.ts`;
+          next();
+        });
+      },
+    },
+  ],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
@@ -21,15 +47,12 @@ export default defineConfig({
   // HMR while proxying everything else — Foundry routes, the socket, our static files —
   // to the real server on :30000. Ignored by `vite build`.
   server: {
+    // `localhost` binds ::1 here, which shares 30001 with an IPv4 dev server (pf2e-reignmaker) instead
+    // of colliding; on 127.0.0.1 the clash is caught and Vite moves to the next free port.
+    host: '127.0.0.1',
     port: 30001,
     open: '/game',
     proxy: {
-      // The built entry doesn't exist in dev: bounce Foundry's request for it back to
-      // Vite as src/index.ts (base maps /modules/<id>/dist/ → src/), served with HMR.
-      [`/modules/${id}/dist/${id}.js`]: {
-        target: `http://localhost:30001/modules/${id}/dist`,
-        rewrite: () => '/index.ts',
-      },
       // Our static files live on disk under the module, not in Vite's src/ root — Foundry serves them.
       [`^/modules/${id}/(lang|packs|assets)/`]: FOUNDRY,
       // Everything outside our module (Foundry core, the active system, other modules).

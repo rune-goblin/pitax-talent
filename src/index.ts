@@ -1,5 +1,5 @@
 import './styles.css';
-import { BUZZER_SETTING, DEFAULT_BUZZER, MODULE_ID } from './constants';
+import { BUZZER_SETTING, CHIME_SETTING, DEFAULT_BUZZER, DEFAULT_CHIME, MODULE_ID } from './constants';
 import { promptAdventureImport } from './adventure';
 import { t } from './i18n';
 import { StageLayer } from './stage/StageLayer';
@@ -20,36 +20,43 @@ function showPoster(): void {
 
 const api = { openDirector: DirectorApp.open, showPoster };
 
-Hooks.once('init', () => {
-  game.settings.register(MODULE_ID, BUZZER_SETTING, {
-    name: `${MODULE_ID}.settings.buzzer.name`,
-    hint: `${MODULE_ID}.settings.buzzer.hint`,
+// Dev HMR swaps in a fresh class here, so a stage edit redraws the canvas in place of a Foundry reload.
+let stageLayer = StageLayer;
+
+function registerSound(key: string, sound: string): void {
+  game.settings.register(MODULE_ID, key, {
+    name: `${MODULE_ID}.settings.${key}.name`,
+    hint: `${MODULE_ID}.settings.${key}.hint`,
     scope: 'world',
     config: true,
     type: new foundry.data.fields.FilePathField({ categories: ['AUDIO'] }),
-    default: DEFAULT_BUZZER,
+    default: sound,
   });
+}
+
+Hooks.once('init', () => {
+  registerSound(BUZZER_SETTING, DEFAULT_BUZZER);
+  registerSound(CHIME_SETTING, DEFAULT_CHIME);
 });
 
 Hooks.once('setup', registerSocket);
 
 Hooks.on('canvasReady', () => {
   const scene = canvas.scene;
-  const { after } = refreshStore(scene);
+  refreshStore(scene);
   if (!isStage(scene)) return;
-  void StageLayer.draw(after);
+  void stageLayer.draw();
   if (game.user.isGM) DirectorApp.open();
 });
 
-Hooks.on('canvasTearDown', () => StageLayer.destroy());
+Hooks.on('canvasTearDown', () => stageLayer.destroy());
 
 Hooks.on('updateScene', (scene: Scene, changes: object) => {
   if (scene.id !== canvas.scene?.id || !foundry.utils.hasProperty(changes, `flags.${MODULE_ID}`)) return;
   const wasStage = !!talent.sceneId;
-  const { before, after } = refreshStore(scene);
-  if (!isStage(scene)) StageLayer.destroy();
-  else if (wasStage) StageLayer.update(before, after);
-  else void StageLayer.draw(after);
+  refreshStore(scene);
+  if (!isStage(scene)) stageLayer.destroy();
+  else if (!wasStage) void stageLayer.draw();
 });
 
 Hooks.once('ready', () => {
@@ -59,3 +66,12 @@ Hooks.once('ready', () => {
   void new VoteButtonApp().render({ force: true });
   void promptAdventureImport();
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept('./stage/StageLayer', (next) => {
+    if (!next) return;
+    stageLayer.destroy();
+    stageLayer = next.StageLayer;
+    if (talent.sceneId) void stageLayer.draw();
+  });
+}

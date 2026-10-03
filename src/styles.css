@@ -6,18 +6,21 @@
   --pt-velvet-deep: #2c0914;
   --pt-ruby: #e2263f;
   --pt-ruby-soft: #ff8090;
+  --pt-emerald: #3ddc84;
   --pt-gilt: #dcb463;
   --pt-gilt-dim: #8f7238;
   --pt-paper: #efe3cc;
   --pt-muted: #b3a28a;
-  --pt-display: 'Modesto Condensed', 'Palatino Linotype', serif;
-  --pt-serif: 'Amiri', 'Palatino Linotype', serif;
+  --pt-display: 'Eczar', 'Amiri', 'Palatino Linotype', serif;
+  --pt-body: var(--font-sans, 'Signika', sans-serif);
 }
 
 .pitax-talent-director .window-content {
   padding: 0;
   background: var(--pt-ink);
   color: var(--pt-paper);
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 /* Foundry's window content hides overflow, so the panels inside need a bounded height to scroll. */

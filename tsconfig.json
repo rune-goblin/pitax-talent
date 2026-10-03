@@ -17,7 +17,7 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["foundry-pf2e"]
+    "types": ["foundry-pf2e", "vite/client"]
   },
   "include": ["src/**/*", "src/**/*.svelte"],
   "exclude": ["node_modules", "dist", "src/tests/e2e"]
