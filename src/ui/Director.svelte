@@ -62,7 +62,9 @@
   }
 
   function leave(ids: string[]) {
-    if (talent.sceneId) void mutate(talent.sceneId, (s) => dismiss(s, ids, actKey));
+    if (!talent.sceneId) return;
+    preview = null;
+    void mutate(talent.sceneId, (s) => dismiss(s, ids, actKey));
   }
 
   function tick(id: string, clock: Clock) {
